@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Fairway Forward — Season</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --forest:#1a3d2b;--fern:#2d6a4f;--pine:#0d2318;
+  --gold:#c9a84c;--goldf:#f0d080;--goldl:#fdf3d8;
+  --ink:#1c1c1a;--muted:#6b6b5e;--border:rgba(28,28,26,.11);
+  --card:#fff;--surf:#f5f3ec;--bg:#faf7ef;
+  --red:#8b1f1f;--redb:#fcebeb;
+  --green:#085041;--greenb:#edf5f0;
+  --blue:#0c3d7a;--blueb:#e6f1fb;
+  --r:13px;
+}
+html,body{min-height:100%;font-family:'DM Sans',sans-serif;color:var(--ink);background:var(--forest);}
+.screen{display:none;min-height:100vh;}
+.screen.show{display:flex;}
+.center-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--forest);}
+
+/* WELCOME */
+.land-card{background:var(--card);border-radius:20px;padding:36px 30px;width:100%;max-width:360px;box-shadow:0 24px 60px rgba(0,0,0,.3);text-align:center;}
+.land-logo{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:var(--forest);line-height:1.1;margin-bottom:2px;}
+.land-logo span{color:var(--gold);}
+.land-school{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.14em;margin-bottom:18px;padding-bottom:16px;border-bottom:.5px solid var(--border);}
+.land-motto{font-family:'Cormorant Garamond',serif;font-size:13px;font-style:italic;color:var(--forest);line-height:1.7;margin-bottom:4px;padding:12px 0 0;}
+.land-ref{font-size:10px;color:var(--muted);letter-spacing:.06em;margin-bottom:20px;padding-bottom:16px;border-bottom:.5px solid var(--border);}
+.who-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:12px;}
+.role-btn{display:flex;align-items:center;gap:13px;padding:14px 15px;border:.5px solid var(--border);border-radius:12px;cursor:pointer;background:none;font-family:'DM Sans',sans-serif;transition:all .15s;text-align:left;width:100%;margin-bottom:8px;}
+.role-btn:last-child{margin-bottom:0;}
+.role-btn:hover{border-color:var(--fern);background:var(--greenb);}
+.role-btn:active{transform:scale(.98);}
+.role-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.role-title{font-size:13px;font-weight:500;color:var(--ink);}
+.role-desc{font-size:11px;color:var(--muted);margin-top:1px;}
+
+/* PIN */
+.pin-card{background:var(--card);border-radius:20px;padding:36px 30px;width:100%;max-width:320px;box-shadow:0 24px 60px rgba(0,0,0,.3);text-align:center;}
+.pin-logo{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:700;color:var(--forest);line-height:1.1;margin-bottom:2px;}
+.pin-logo span{color:var(--gold);}
+.pin-school{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;margin-bottom:18px;padding-bottom:14px;border-bottom:.5px solid var(--border);}
+.pin-hed{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:var(--forest);margin-bottom:4px;}
+.pin-sub{font-size:11px;color:var(--muted);margin-bottom:20px;}
+.pin-dots{display:flex;gap:12px;justify-content:center;margin-bottom:18px;}
+.pin-dot{width:13px;height:13px;border-radius:50%;border:2px solid var(--border);transition:all .2s;}
+.pin-dot.filled{background:var(--forest);border-color:var(--forest);}
+.pin-dot.error{background:var(--red);border-color:var(--red);}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px;}
+.pin-key{padding:15px;border:.5px solid var(--border);border-radius:12px;font-size:19px;font-weight:400;cursor:pointer;background:none;font-family:'DM Sans',sans-serif;color:var(--ink);transition:all .15s;}
+.pin-key:hover{background:var(--surf);border-color:var(--fern);}
+.pin-key:active{transform:scale(.93);}
+.pin-key.del{font-size:13px;color:var(--muted);}
+.pin-err{font-size:12px;color:var(--red);min-height:18px;margin-bottom:4px;}
+.pin-back{font-size:11px;color:var(--muted);cursor:pointer;background:none;border:none;font-family:'DM Sans',sans-serif;padding:8px;width:100%;margin-top:4px;}
+.pin-back:hover{color:var(--forest);}
+
+/* PLAYER PICKER */
+.picker-wrap{max-height:280px;overflow-y:auto;margin-top:6px;}
+.picker-btn{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:9px 12px;margin-bottom:6px;border:.5px solid var(--border);border-radius:9px;background:none;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);cursor:pointer;transition:all .15s;}
+.picker-btn:hover{background:var(--greenb);border-color:var(--fern);}
+
+/* APP SHELL */
+.app{flex-direction:column;min-height:100vh;max-width:560px;margin:0 auto;background:var(--bg);}
+.topbar{background:var(--forest);padding:0 16px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:0;z-index:10;}
+.tb-logo{font-family:'Cormorant Garamond',serif;color:var(--goldf);font-size:16px;font-weight:700;}
+.tb-logo small{color:rgba(255,255,255,.4);font-size:9px;font-family:'DM Sans',sans-serif;font-weight:300;margin-left:6px;letter-spacing:.08em;text-transform:uppercase;}
+.tb-right{display:flex;align-items:center;gap:8px;}
+.tb-badge{font-size:9px;padding:2px 8px;border-radius:10px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;}
+.tb-name{font-size:11px;color:rgba(255,255,255,.6);}
+.tb-out{font-size:10px;color:rgba(255,255,255,.38);cursor:pointer;background:none;border:none;font-family:'DM Sans',sans-serif;padding:4px 8px;border-radius:5px;}
+.tb-out:hover{color:rgba(255,255,255,.75);background:rgba(255,255,255,.1);}
+.save-chip{font-size:9px;color:rgba(255,255,255,.38);display:flex;align-items:center;gap:4px;}
+.save-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:sdp 2.5s ease-in-out infinite;}
+@keyframes sdp{0%,100%{opacity:.9}50%{opacity:.25}}
+.content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.page{padding:16px;display:none;}
+.page.show{display:block;}
+.bot-nav{display:flex;background:var(--card);border-top:.5px solid var(--border);flex-shrink:0;}
+.bn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px 8px;cursor:pointer;border:none;background:none;font-family:'DM Sans',sans-serif;border-top:2px solid transparent;transition:all .15s;}
+.bn.on{border-top-color:var(--fern);}
+.bn-ic{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;}
+.bn-lbl{font-size:9px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.06em;}
+.bn.on .bn-lbl{color:var(--fern);}
+
+/* SHARED */
+.page-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;color:var(--forest);margin-bottom:3px;}
+.page-sub{font-size:11px;color:var(--muted);margin-bottom:16px;}
+.card{background:var(--card);border:.5px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:12px;}
+.ct{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:10px;}
+.primary-btn{width:100%;padding:13px;background:var(--forest);color:#fff;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:background .15s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:4px;}
+.primary-btn:hover{background:var(--fern);}
+.primary-btn:disabled{opacity:.35;cursor:not-allowed;}
+.ghost-btn{width:100%;padding:11px;background:transparent;color:var(--forest);border:.5px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;margin-top:4px;}
+.ghost-btn:hover{border-color:var(--fern);background:var(--greenb);}
+.badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;border-radius:10px;font-size:10px;font-weight:600;padding:0 6px;}
+.badge-g{background:var(--greenb);color:var(--green);}
+.badge-r{background:var(--redb);color:var(--red);}
+.badge-b{background:var(--blueb);color:var(--blue);}
+.badge-m{background:var(--surf);color:var(--muted);}
+.badge-gold{background:var(--goldl);color:#7a5c0a;}
+.divider{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:16px 0 10px;display:flex;align-items:center;gap:8px;}
+.divider::before,.divider::after{content:'';flex:1;height:.5px;background:var(--border);}
+.redline-divider{margin:8px 0;display:flex;align-items:center;gap:8px;}
+.redline-divider::before,.redline-divider::after{content:'';flex:1;height:1.5px;background:var(--red);opacity:.5;}
+.redline-label{font-size:9px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.12em;white-space:nowrap;}
+.form-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:5px;display:block;}
+input[type=text],input[type=tel],input[type=number],input[type=date],select,textarea{width:100%;padding:9px 11px;border:.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);background:var(--card);outline:none;}
+input:focus,select:focus,textarea:focus{border-color:var(--fern);}
+
+/* HERO */
+.hero{background:var(--forest);border-radius:var(--r);padding:20px;margin-bottom:14px;}
+.hero-lbl{font-size:9px;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.45);margin-bottom:6px;}
+.hero-hed{font-family:'Cormorant Garamond',serif;font-size:21px;font-weight:700;color:var(--goldf);line-height:1.2;margin-bottom:4px;}
+.hero-sub{font-size:11px;color:rgba(255,255,255,.55);line-height:1.65;}
+.hstats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px;}
+.hs{background:rgba(255,255,255,.09);border-radius:9px;padding:10px 12px;text-align:center;}
+.hs-v{font-size:22px;font-weight:500;color:#fff;line-height:1;}
+.hs-l{font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,.4);margin-top:3px;}
+
+/* PLAYER CARD (roster) */
+.p-card{background:var(--card);border:.5px solid var(--border);border-radius:var(--r);padding:13px 14px;margin-bottom:8px;cursor:pointer;transition:border-color .15s;}
+.p-card:hover{border-color:var(--fern);}
+.p-card.varsity{border-left:3px solid var(--fern);}
+.p-card.jv{border-left:3px solid var(--gold);}
+.p-card-main{display:flex;align-items:center;gap:10px;}
+.p-ini{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0;}
+.p-info{flex:1;min-width:0;}
+.p-name{font-size:14px;font-weight:500;color:var(--ink);}
+.p-meta{font-size:11px;color:var(--muted);margin-top:1px;}
+.p-avg{font-size:16px;font-weight:700;text-align:right;flex-shrink:0;}
+.p-expand{display:none;margin-top:12px;padding-top:12px;border-top:.5px solid var(--border);}
+.p-expand.open{display:block;}
+.phone-row{display:flex;gap:8px;align-items:center;margin-bottom:10px;}
+.phone-row input{flex:1;}
+.phone-save-btn{padding:8px 14px;background:var(--forest);color:#fff;border:none;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:background .15s;}
+.phone-save-btn:hover{background:var(--fern);}
+.parent-entry-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+
+/* LINEUP CHECK */
+.lineup-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;background:var(--surf);margin-bottom:7px;cursor:pointer;user-select:none;transition:all .15s;}
+.lineup-row:hover{border-color:var(--fern);}
+.lineup-row.playing{background:var(--greenb);border:.5px solid rgba(8,80,65,.2);}
+.lineup-chk{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;color:#fff;transition:all .15s;}
+.lineup-row.playing .lineup-chk{background:var(--fern);border-color:var(--fern);}
+.lineup-name{flex:1;font-size:13px;font-weight:500;}
+.lineup-row.playing .lineup-name{color:var(--green);}
+
+/* COPY MSG BLOCK */
+.msg-out{background:var(--card);border:.5px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:10px;}
+.msg-out-hdr{padding:10px 14px;border-bottom:.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.msg-out-hdr.player-hdr{background:var(--greenb);}
+.msg-out-hdr.parent-hdr{background:var(--goldl);}
+.msg-out-title{font-size:12px;font-weight:500;color:var(--ink);}
+.msg-out-sub{font-size:10px;color:var(--muted);margin-top:1px;}
+.msg-out-body{padding:12px 14px;font-size:12px;line-height:1.75;color:var(--ink);white-space:pre-wrap;}
+.copy-btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border:.5px solid var(--border);border-radius:7px;background:var(--surf);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .15s;margin:0 14px 12px;}
+.copy-btn:hover{border-color:var(--fern);color:var(--fern);background:var(--greenb);}
+
+/* RSVP / CONFIRM BUTTONS */
+.rsvp-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+.rsvp-btn{padding:12px 10px;border:.5px solid var(--border);border-radius:10px;cursor:pointer;background:none;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:var(--ink);transition:all .15s;text-align:center;width:100%;}
+.rsvp-btn:hover{border-color:var(--fern);background:var(--greenb);}
+.rsvp-btn.selected{background:var(--forest);color:var(--goldf);border-color:var(--forest);}
+.rsvp-btn.need-ride.selected{background:var(--blue);border-color:var(--blue);color:#fff;}
+
+/* CARPOOL BOARD */
+.carpool-card{background:var(--card);border:.5px solid var(--border);border-radius:var(--r);padding:13px;margin-bottom:8px;}
+.carpool-name{font-size:13px;font-weight:500;color:var(--ink);}
+.carpool-seats{font-size:11px;color:var(--muted);}
+.seat-pill{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:500;margin-left:6px;}
+.seat-open{background:var(--greenb);color:var(--green);}
+.seat-full{background:var(--surf);color:var(--muted);}
+
+/* PARENT SIGNUP */
+.event-card{background:var(--card);border:.5px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:12px;}
+.event-type-chip{font-size:9px;padding:2px 7px;border-radius:4px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;}
+.chip-t{background:var(--redb);color:var(--red);}
+.chip-m{background:var(--blueb);color:var(--blue);}
+.chip-p{background:var(--surf);color:var(--muted);}
+.attend-btn{padding:9px;border-radius:8px;border:.5px solid var(--border);background:none;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;transition:all .15s;text-align:center;}
+.attend-btn.yes{background:var(--greenb);border-color:rgba(8,80,65,.3);color:var(--green);}
+.bring-input{width:100%;padding:8px 11px;border:.5px solid var(--border);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--ink);background:var(--card);outline:none;margin-top:6px;}
+.bring-input:focus{border-color:var(--fern);}
+
+/* EVENT FORM */
+.event-form{background:var(--card);border:.5px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:14px;}
+</style>
+</head>
+<body>
+
+<!-- ══════ WELCOME ══════ -->
+<div class="screen show" id="screen-welcome">
+  <div class="center-wrap">
+    <div class="land-card">
+      <div class="land-logo">Fairway <span>Forward</span></div>
+      <div class="land-school">Bishop Chatard · Boys Golf · 2025–26</div>
+      <div class="land-motto">"Trust in the Lord with all your heart.<br>Lean not on your own understanding."</div>
+      <div class="land-ref">Proverbs 3:5</div>
+      <div class="who-lbl">Sign in as</div>
+      <button class="role-btn" onclick="goCoachPin()">
+        <div class="role-icon" style="background:#1a3d2b">🏌️</div>
+        <div><div class="role-title">Coach</div><div class="role-desc">Roster · lineup · texts · carpool</div></div>
+      </button>
+      <button class="role-btn" onclick="goPlayerPicker()">
+        <div class="role-icon" style="background:#edf5f0">⛳</div>
+        <div><div class="role-title">Player</div><div class="role-desc">My status · confirm lineup · carpool</div></div>
+      </button>
+      <button class="role-btn" onclick="goParentEntry()">
+        <div class="role-icon" style="background:#faeeda">🏆</div>
+        <div><div class="role-title">Parent / Guardian</div><div class="role-desc">Events · signup · carpool · updates</div></div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ COACH PIN ══════ -->
+<div class="screen" id="screen-pin">
+  <div class="center-wrap">
+    <div class="pin-card">
+      <div class="pin-logo">Fairway <span>Forward</span></div>
+      <div class="pin-school">Bishop Chatard · Boys Golf · Coach</div>
+      <div class="pin-hed" id="pin-hed">Coach access</div>
+      <div class="pin-sub" id="pin-sub">Enter your PIN</div>
+      <div class="pin-dots">
+        <div class="pin-dot" id="pd0"></div><div class="pin-dot" id="pd1"></div>
+        <div class="pin-dot" id="pd2"></div><div class="pin-dot" id="pd3"></div>
+      </div>
+      <div class="pin-err" id="pin-err"></div>
+      <div class="pin-pad">
+        <button class="pin-key" onclick="pk('1')">1</button><button class="pin-key" onclick="pk('2')">2</button><button class="pin-key" onclick="pk('3')">3</button>
+        <button class="pin-key" onclick="pk('4')">4</button><button class="pin-key" onclick="pk('5')">5</button><button class="pin-key" onclick="pk('6')">6</button>
+        <button class="pin-key" onclick="pk('7')">7</button><button class="pin-key" onclick="pk('8')">8</button><button class="pin-key" onclick="pk('9')">9</button>
+        <button class="pin-key" style="visibility:hidden"></button><button class="pin-key" onclick="pk('0')">0</button><button class="pin-key del" onclick="pd()">⌫</button>
+      </div>
+      <button class="pin-back" onclick="goWelcome()">← Back</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ PLAYER PICKER ══════ -->
+<div class="screen" id="screen-player-picker">
+  <div class="center-wrap">
+    <div class="pin-card">
+      <div class="pin-logo">Fairway <span>Forward</span></div>
+      <div class="pin-school">Bishop Chatard · Boys Golf · 2025–26</div>
+      <div class="pin-hed">Who are you?</div>
+      <div class="pin-sub">Find your name</div>
+      <input type="text" id="player-search" placeholder="Search your name…" oninput="renderPlayerPicker()"
+        style="width:100%;padding:9px 11px;border:.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);background:var(--card);outline:none;margin-bottom:10px;">
+      <div class="picker-wrap" id="player-picker-list"></div>
+      <button class="pin-back" onclick="goWelcome()">← Back</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ PARENT ENTRY (phone number) ══════ -->
+<div class="screen" id="screen-parent-entry">
+  <div class="center-wrap">
+    <div class="pin-card">
+      <div class="pin-logo">Fairway <span>Forward</span></div>
+      <div class="pin-school">Bishop Chatard · Boys Golf · Parent Portal</div>
+      <div class="pin-hed">Parent / Guardian</div>
+      <div class="pin-sub">Enter your cell number to access the program</div>
+      <input type="tel" id="parent-phone-input" placeholder="(317) 555-0100"
+        style="width:100%;padding:11px;border:.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:15px;color:var(--ink);background:var(--card);outline:none;text-align:center;margin-bottom:10px;letter-spacing:.05em;"
+        onkeydown="if(event.key==='Enter')loginParent()">
+      <button onclick="loginParent()" style="width:100%;padding:13px;background:var(--forest);color:#fff;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;margin-bottom:8px;">Access parent portal →</button>
+      <div style="font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:10px">No account needed. Your number is only used to identify you in this program.</div>
+      <button class="pin-back" onclick="goWelcome()">← Back</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ COACH APP ══════ -->
+<div class="screen" id="screen-coach" style="flex-direction:column;background:var(--bg)">
+  <div class="app show">
+    <div class="topbar">
+      <div class="tb-logo">Fairway Forward <small>Season</small></div>
+      <div class="tb-right">
+        <span class="tb-badge" style="background:rgba(201,168,76,.2);color:var(--goldf)">Coach</span>
+        <span class="save-chip" id="save-chip"><span class="save-dot"></span>Saved</span>
+        <button class="tb-out" onclick="goWelcome()">Lock</button>
+      </div>
+    </div>
+    <div class="content">
+
+      <!-- ROSTER PAGE -->
+      <div class="page show" id="cp-roster">
+        <div class="page-title">2026 Roster</div>
+        <div class="page-sub">Varsity top 8 · JV next 8 · tap any player to manage</div>
+        <div class="hero">
+          <div class="hero-lbl">Team status</div>
+          <div class="hero-hed">Bishop Chatard Boys Golf</div>
+          <div class="hero-sub">Sorted by tryout weighted average. Add parent contact under each player.</div>
+          <div class="hstats">
+            <div class="hs"><div class="hs-v" id="c-varsity-count">–</div><div class="hs-l">Varsity</div></div>
+            <div class="hs"><div class="hs-v" id="c-jv-count">–</div><div class="hs-l">JV</div></div>
+            <div class="hs"><div class="hs-v" id="c-parent-count">–</div><div class="hs-l">Parents in</div></div>
+          </div>
+        </div>
+        <div id="c-roster-list"></div>
+      </div>
+
+      <!-- EVENTS PAGE -->
+      <div class="page" id="cp-events">
+        <div class="page-title">Events</div>
+        <div class="page-sub">Matches · Tournaments · manage all here</div>
+        <div class="event-form">
+          <div class="ct">Add new event</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <div><label class="form-label">Type</label>
+              <select id="ev-type">
+                <option value="match">Match</option>
+                <option value="tournament">Tournament</option>
+                <option value="practice">Practice</option>
+              </select>
+            </div>
+            <div><label class="form-label">Date</label><input type="date" id="ev-date"></div>
+          </div>
+          <div style="margin-bottom:8px"><label class="form-label">Event name</label><input type="text" id="ev-name" placeholder="e.g. vs Cathedral · Coffin GC"></div>
+          <div style="margin-bottom:10px"><label class="form-label">Location</label><input type="text" id="ev-loc" placeholder="Course name and address"></div>
+          <div style="margin-bottom:10px"><label class="form-label">Tee time / meet time</label><input type="text" id="ev-time" placeholder="e.g. Tee time 3:30 PM · Meet at 2:45"></div>
+          <button class="primary-btn" onclick="addEvent()">Add event</button>
+        </div>
+        <div id="c-events-list"><div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">No events added yet.</div></div>
+      </div>
+
+      <!-- LINEUP PAGE -->
+      <div class="page" id="cp-lineup">
+        <div class="page-title">Build lineup</div>
+        <div class="page-sub">Select players · generate texts for all</div>
+        <div class="card" style="margin-bottom:12px">
+          <div class="ct">Select event</div>
+          <select id="lineup-event-sel" onchange="renderLineupSelector()">
+            <option value="">— pick an event —</option>
+          </select>
+        </div>
+        <div id="lineup-builder" style="display:none">
+          <div style="background:var(--forest);border-radius:var(--r);padding:14px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between">
+            <div><div style="font-size:10px;color:rgba(255,255,255,.5)">Playing today</div><div style="font-size:10px;color:rgba(255,255,255,.3);margin-top:2px">Select 5 or 6 players</div></div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:700;color:var(--goldf)" id="lineup-count">0</div>
+          </div>
+          <div id="lineup-player-list"></div>
+          <button class="primary-btn" id="btn-gen-texts" onclick="generateTexts()" disabled style="margin-top:8px">Generate all texts →</button>
+        </div>
+        <div id="texts-output" style="display:none">
+          <div class="divider">Copy-ready player texts</div>
+          <div id="player-texts"></div>
+          <div class="divider">Copy-ready parent texts</div>
+          <div id="parent-texts"></div>
+        </div>
+      </div>
+
+      <!-- CARPOOL PAGE -->
+      <div class="page" id="cp-carpool">
+        <div class="page-title">Carpool board</div>
+        <div class="page-sub">Coach has 3 seats · parents and players see this too</div>
+        <div class="card" style="margin-bottom:12px">
+          <div class="ct">Select event</div>
+          <select id="carpool-event-sel" onchange="renderCarpoolBoard('coach')">
+            <option value="">— pick an event —</option>
+          </select>
+        </div>
+        <div id="carpool-board-coach"></div>
+      </div>
+
+    </div>
+    <div class="bot-nav">
+      <button class="bn on" id="cb-roster"  onclick="cNav('cp-roster',this)"><div class="bn-ic" style="background:#edf5f0;color:#085041">👥</div><div class="bn-lbl">Roster</div></button>
+      <button class="bn"    id="cb-events"  onclick="cNav('cp-events',this)"><div class="bn-ic" style="background:#fdf3d8;color:#633806">📅</div><div class="bn-lbl">Events</div></button>
+      <button class="bn"    id="cb-lineup"  onclick="cNav('cp-lineup',this)"><div class="bn-ic" style="background:#e6f1fb;color:#0c447c">✦</div><div class="bn-lbl">Lineup</div></button>
+      <button class="bn"    id="cb-carpool" onclick="cNav('cp-carpool',this)"><div class="bn-ic" style="background:#eeedfe;color:#3c3489">🚗</div><div class="bn-lbl">Carpool</div></button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ PLAYER APP ══════ -->
+<div class="screen" id="screen-player" style="flex-direction:column;background:var(--bg)">
+  <div class="app show">
+    <div class="topbar">
+      <div class="tb-logo">Fairway Forward <small>Player</small></div>
+      <div class="tb-right">
+        <span class="tb-badge" style="background:rgba(201,168,76,.15);color:var(--goldf)">Player</span>
+        <span class="tb-name" id="p-tb-name"></span>
+        <button class="tb-out" onclick="goWelcome()">← Back</button>
+      </div>
+    </div>
+    <div class="content">
+      <div class="page show" id="pp-home">
+        <div class="hero">
+          <div class="hero-lbl">2025–26 Season</div>
+          <div class="hero-hed" id="p-hero-name">–</div>
+          <div class="hero-sub" id="p-hero-sub">–</div>
+          <div class="hstats">
+            <div class="hs"><div class="hs-v" id="p-squad">–</div><div class="hs-l">Squad</div></div>
+            <div class="hs"><div class="hs-v" id="p-avg">–</div><div class="hs-l">Try avg</div></div>
+            <div class="hs"><div class="hs-v" id="p-rank">–</div><div class="hs-l">Rank</div></div>
+          </div>
+        </div>
+
+        <!-- Add parent phone -->
+        <div class="card" id="p-parent-section">
+          <div class="ct">Parent / guardian contact</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:10px">Enter your parent's cell number so they receive program updates and event info.</div>
+          <div id="p-parent-slots"></div>
+          <button onclick="addParentSlot()" style="font-size:11px;color:var(--fern);background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;padding:4px 0;margin-top:4px">+ Add another parent</button>
+        </div>
+
+        <!-- Next event + RSVP -->
+        <div id="p-next-event"></div>
+
+        <!-- Carpool for next event -->
+        <div id="p-carpool-section"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ PARENT APP ══════ -->
+<div class="screen" id="screen-parent" style="flex-direction:column;background:var(--bg)">
+  <div class="app show">
+    <div class="topbar">
+      <div class="tb-logo">Fairway Forward <small>Family</small></div>
+      <div class="tb-right">
+        <span class="tb-badge" style="background:rgba(201,168,76,.15);color:var(--goldf)">Parent</span>
+        <span class="tb-name" id="par-tb-phone"></span>
+        <button class="tb-out" onclick="goWelcome()">← Back</button>
+      </div>
+    </div>
+    <div class="content">
+      <div class="page show" id="par-home">
+
+        <div class="hero">
+          <div class="hero-lbl">Bishop Chatard Boys Golf</div>
+          <div class="hero-hed">Welcome, team family.</div>
+          <div class="hero-sub">Sign up for events · coordinate carpool · everything the program needs from you.</div>
+        </div>
+
+        <!-- Which player is theirs -->
+        <div class="card" id="par-player-card">
+          <div class="ct">Your player</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Don't see your son? Have him add your number in the app under Player → Parent contact.</div>
+          <div id="par-player-display"></div>
+        </div>
+
+        <!-- Upcoming events — signup + carpool -->
+        <div class="page-title" style="margin-bottom:4px">Upcoming events</div>
+        <div class="page-sub">Tap to RSVP · offer seats · bring something</div>
+        <div id="par-events-list"><div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">No events yet. Check back soon.</div></div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════
+   STORAGE
+════════════════════════════════════════ */
+const SKEY     = 'ff_season_2026';
+const PIN_KEY  = 'ff_coach_pin_season';
+
+function persist(){
+  try{
+    localStorage.setItem(SKEY,JSON.stringify({roster,events,lineups,carpool,parentSignups,rsvps}));
+    const c=document.getElementById('save-chip');
+    if(c){c.style.color='rgba(240,208,128,.75)';setTimeout(()=>c.style.color='rgba(255,255,255,.38)',1400);}
+  }catch(e){}
+}
+function hydrate(){
+  try{
+    const raw=localStorage.getItem(SKEY);
+    if(!raw)return;
+    const d=JSON.parse(raw);
+    if(d.roster)roster=d.roster;
+    if(d.events)events=d.events;
+    if(d.lineups)lineups=d.lineups;
+    if(d.carpool)carpool=d.carpool;
+    if(d.parentSignups)parentSignups=d.parentSignups;
+    if(d.rsvps)rsvps=d.rsvps;
+  }catch(e){}
+}
+function getPin(){return localStorage.getItem(PIN_KEY)||'';}
+function setPin(p){localStorage.setItem(PIN_KEY,p);}
+function pinIsSet(){return getPin().length===4;}
+
+/* ════════════════════════════════════════
+   STATE
+════════════════════════════════════════ */
+let pinBuf='', pinMode='enter', newPinBuf='';
+let activePlayerId=null, activeParentPhone='';
+
+// ROSTER — seeded from the 2025 tryout results
+// These 16 are the team; sorted by tryout avg (lowest = varsity)
+let roster = [
+  {id:1,first:'Nolan',  last:'Armour',   year:'Sr',tryAvg:null,parents:[],squad:'v'},
+  {id:2,first:'Oscar',  last:'Bard',     year:'Jr',tryAvg:null,parents:[],squad:'v'},
+  {id:3,first:'Charlie',last:'Belch',    year:'Sr',tryAvg:null,parents:[],squad:'v'},
+  {id:4,first:'Owen',   last:'Bentzel',  year:'So',tryAvg:null,parents:[],squad:'v'},
+  {id:5,first:'Sam',    last:'Berzai',   year:'Jr',tryAvg:null,parents:[],squad:'v'},
+  {id:6,first:'Ben',    last:'Bowling',  year:'Fr',tryAvg:null,parents:[],squad:'v'},
+  {id:7,first:'James',  last:'Buckland', year:'Fr',tryAvg:null,parents:[],squad:'v'},
+  {id:8,first:'Thomas', last:'Dilts',    year:'Fr',tryAvg:null,parents:[],squad:'v'},
+  {id:9,first:'William',last:'Dilts',    year:'Jr',tryAvg:null,parents:[],squad:'jv'},
+  {id:10,first:'Van',   last:'Driscoll', year:'So',tryAvg:null,parents:[],squad:'jv'},
+  {id:11,first:'Grey',  last:'Durham',   year:'Sr',tryAvg:null,parents:[],squad:'jv'},
+  {id:12,first:'Ryan',  last:'Ellis',    year:'So',tryAvg:null,parents:[],squad:'jv'},
+  {id:13,first:'Kellen',last:'Ford',     year:'Sr',tryAvg:null,parents:[],squad:'jv'},
+  {id:14,first:'Brendon',last:'Gillen',  year:'So',tryAvg:null,parents:[],squad:'jv'},
+  {id:15,first:'Nolan', last:'Gillen',   year:'So',tryAvg:null,parents:[],squad:'jv'},
+  {id:16,first:'Jack',  last:'Gustitus', year:'Fr',tryAvg:null,parents:[],squad:'jv'},
+];
+let events = [];       // [{id,type,name,loc,date,time}]
+let lineups = {};      // eventId → [playerId,...]
+let carpool = {};      // eventId → [{name,phone,seats,need,role}]
+let parentSignups = {};// eventId → [{phone,playerName,attending,bring}]
+let rsvps = {};        // eventId_playerId → {status:'yes'|'ride'}
+
+/* ════════════════════════════════════════
+   HELPERS
+════════════════════════════════════════ */
+const COLORS=['#edf5f0','#e6f1fb','#faeeda','#eeedfe','#f0f7f4','#fcf0e8','#f1f5fb','#f5f0fb','#fdf3d8','#eaf3de','#edf5f0','#e6f1fb','#faeeda','#eeedfe','#f0f7f4','#fcf0e8'];
+const TCS   =['#085041','#0c447c','#633806','#3c3489','#1d7055','#7a3012','#1a3d7c','#4a1d8a','#7a5c0a','#27500a','#085041','#0c447c','#633806','#3c3489','#1d7055','#7a3012'];
+function ini(p){return((p.first||'?')[0]+(p.last||'?')[0]).toUpperCase();}
+function fmtDate(d){if(!d)return'';const dt=new Date(d+'T12:00:00');return dt.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});}
+function evTypeChip(type){const cls=type==='tournament'?'chip-t':type==='match'?'chip-m':'chip-p';const lbl=type==='tournament'?'Tournament':type==='match'?'Match':'Practice';return `<span class="event-type-chip ${cls}">${lbl}</span>`;}
+function copyText(key,btn){const t=window[key];if(!t)return;navigator.clipboard.writeText(t).then(()=>{btn.textContent='✓ Copied';btn.style.color='var(--green)';setTimeout(()=>{btn.textContent='📋 Copy';btn.style.color='';},2000);});}
+
+/* ════════════════════════════════════════
+   SCREEN ROUTING
+════════════════════════════════════════ */
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('show'));document.getElementById(id).classList.add('show');}
+function goWelcome(){showScreen('screen-welcome');}
+
+/* ════════════════════════════════════════
+   PIN — programmable
+════════════════════════════════════════ */
+function goCoachPin(){
+  pinBuf='';updateDots();document.getElementById('pin-err').textContent='';
+  if(!pinIsSet()){
+    pinMode='set-new';
+    document.getElementById('pin-hed').textContent='Create your coach PIN';
+    document.getElementById('pin-sub').textContent='Choose a 4-digit PIN';
+  } else {
+    pinMode='enter';
+    document.getElementById('pin-hed').textContent='Coach access';
+    document.getElementById('pin-sub').textContent='Enter your PIN';
+  }
+  showScreen('screen-pin');
+}
+function pk(k){if(pinBuf.length>=4)return;pinBuf+=k;updateDots();if(pinBuf.length===4)setTimeout(handlePin,180);}
+function pd(){pinBuf=pinBuf.slice(0,-1);updateDots();document.getElementById('pin-err').textContent='';}
+function updateDots(){for(let i=0;i<4;i++){const d=document.getElementById('pd'+i);d.classList.toggle('filled',i<pinBuf.length);d.classList.remove('error');}}
+function handlePin(){
+  if(pinMode==='set-new'){
+    newPinBuf=pinBuf;pinBuf='';updateDots();
+    pinMode='confirm-new';
+    document.getElementById('pin-hed').textContent='Confirm your PIN';
+    document.getElementById('pin-sub').textContent='Enter the same 4 digits again';
+    return;
+  }
+  if(pinMode==='confirm-new'){
+    if(pinBuf===newPinBuf){setPin(pinBuf);pinBuf='';updateDots();enterCoach();}
+    else{
+      for(let i=0;i<4;i++)document.getElementById('pd'+i).classList.add('error');
+      document.getElementById('pin-err').textContent='Didn\'t match. Try again.';
+      setTimeout(()=>{pinBuf='';updateDots();pinMode='set-new';document.getElementById('pin-hed').textContent='Create your coach PIN';document.getElementById('pin-sub').textContent='Choose a 4-digit PIN';document.getElementById('pin-err').textContent='';},1000);
+    }
+    return;
+  }
+  if(pinBuf===getPin()){enterCoach();}
+  else{
+    for(let i=0;i<4;i++)document.getElementById('pd'+i).classList.add('error');
+    document.getElementById('pin-err').textContent='Wrong PIN.';
+    setTimeout(()=>{pinBuf='';updateDots();},900);
+  }
+}
+function enterCoach(){pinBuf='';updateDots();showScreen('screen-coach');renderCoachRoster();populateEventSelects();}
+
+/* ════════════════════════════════════════
+   PLAYER PICKER
+════════════════════════════════════════ */
+function goPlayerPicker(){document.getElementById('player-search').value='';renderPlayerPicker();showScreen('screen-player-picker');}
+function renderPlayerPicker(){
+  const q=(document.getElementById('player-search').value||'').toLowerCase();
+  const list=roster.filter(p=>!q||(p.first+' '+p.last).toLowerCase().includes(q));
+  document.getElementById('player-picker-list').innerHTML=list.length
+    ?list.map(p=>`<button class="picker-btn" onclick="loginPlayer(${p.id})">
+        <div style="width:32px;height:32px;border-radius:50%;background:${COLORS[p.id-1]};color:${TCS[p.id-1]};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0">${ini(p)}</div>
+        <div style="flex:1;font-size:13px;font-weight:500">${p.first} ${p.last}</div>
+        <span style="font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;background:${p.squad==='v'?'var(--greenb)':'var(--goldl)'};color:${p.squad==='v'?'var(--green)':'#7a5c0a'}">${p.squad==='v'?'Varsity':'JV'}</span>
+      </button>`).join('')
+    :'<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">Not on the roster yet.</div>';
+}
+function loginPlayer(id){
+  activePlayerId=id;
+  const p=roster.find(x=>x.id===id);
+  document.getElementById('p-tb-name').textContent=p.first;
+  showScreen('screen-player');
+  renderPlayerHome();
+}
+
+/* ════════════════════════════════════════
+   PARENT ENTRY
+════════════════════════════════════════ */
+function goParentEntry(){showScreen('screen-parent-entry');}
+function loginParent(){
+  const raw=document.getElementById('parent-phone-input').value.trim();
+  const phone=raw.replace(/\D/g,'');
+  if(phone.length<10){alert('Please enter a valid 10-digit phone number.');return;}
+  activeParentPhone=phone;
+  document.getElementById('par-tb-phone').textContent=formatPhone(phone);
+  showScreen('screen-parent');
+  renderParentHome();
+}
+function formatPhone(p){if(p.length===10)return`(${p.slice(0,3)}) ${p.slice(3,6)}-${p.slice(6)}`;return p;}
+
+/* ════════════════════════════════════════
+   COACH — ROSTER
+════════════════════════════════════════ */
+function cNav(pid,btn){
+  document.querySelectorAll('#screen-coach .page').forEach(p=>p.classList.remove('show'));
+  document.getElementById(pid).classList.add('show');
+  document.querySelectorAll('#screen-coach .bn').forEach(b=>b.classList.remove('on'));
+  const el=typeof btn==='string'?document.getElementById(btn):btn;
+  if(el)el.classList.add('on');
+  if(pid==='cp-lineup')populateEventSelects();
+  if(pid==='cp-carpool')populateEventSelects();
+}
+
+function renderCoachRoster(){
+  const v=roster.filter(p=>p.squad==='v');
+  const jv=roster.filter(p=>p.squad==='jv');
+  const withPhone=roster.filter(p=>p.parents&&p.parents.some(x=>x.phone));
+  document.getElementById('c-varsity-count').textContent=v.length;
+  document.getElementById('c-jv-count').textContent=jv.length;
+  document.getElementById('c-parent-count').textContent=withPhone.length;
+
+  let html='<div class="divider">Varsity</div>';
+  v.forEach((p,i)=>{html+=playerCard(p,i);});
+  html+=`<div class="redline-divider"><span class="redline-label">JV line</span></div>`;
+  jv.forEach((p,i)=>{html+=playerCard(p,i+8);});
+  document.getElementById('c-roster-list').innerHTML=html;
+}
+
+function playerCard(p,i){
+  const parentRows=p.parents&&p.parents.length
+    ?p.parents.map((par,pi)=>`
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <div style="flex:1;font-size:12px;color:var(--ink)">${par.name||'Parent '+( pi+1)} · <span style="color:var(--fern)">${formatPhone(par.phone)}</span></div>
+        <button onclick="removeParent(${p.id},${pi});event.stopPropagation()" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted)">×</button>
+      </div>`).join('')
+    :'';
+  return `<div class="p-card ${p.squad}" id="pcard-${p.id}" onclick="toggleCard(${p.id})">
+    <div class="p-card-main">
+      <div class="p-ini" style="background:${COLORS[p.id-1]};color:${TCS[p.id-1]}">${ini(p)}</div>
+      <div class="p-info">
+        <div class="p-name">${p.first} ${p.last} <span style="font-size:9px;font-weight:600;padding:1px 5px;border-radius:4px;background:var(--goldl);color:#7a5c0a">${p.year}</span></div>
+        <div class="p-meta">${p.squad==='v'?'Varsity':'JV'} · ${p.parents&&p.parents.length?'<span style="color:var(--green)">'+p.parents.length+' parent registered</span>':'<span style="color:var(--red)">No parent registered</span>'}</div>
+      </div>
+      <div class="p-avg" style="color:${p.squad==='v'?'var(--fern)':'var(--gold)'}">${p.tryAvg||'–'}</div>
+    </div>
+    <div class="p-expand" id="pexpand-${p.id}">
+      ${parentRows}
+      <div class="ct" style="margin-top:${p.parents&&p.parents.length?'8px':'0'}">Add parent</div>
+      <div class="parent-entry-row">
+        <input type="text" id="pname-${p.id}" placeholder="Parent name" onclick="event.stopPropagation()">
+        <input type="tel" id="ptel-${p.id}" placeholder="Cell number" onclick="event.stopPropagation()">
+      </div>
+      <button class="phone-save-btn" onclick="saveParent(${p.id});event.stopPropagation()" style="width:100%;padding:9px;background:var(--forest);color:#fff;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer">Save parent contact</button>
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button onclick="setSquad(${p.id},'v');event.stopPropagation()" style="flex:1;padding:7px;border-radius:7px;border:.5px solid ${p.squad==='v'?'var(--fern)':'var(--border)'};background:${p.squad==='v'?'var(--greenb)':'none'};font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;color:${p.squad==='v'?'var(--green)':'var(--muted)'}">Varsity</button>
+        <button onclick="setSquad(${p.id},'jv');event.stopPropagation()" style="flex:1;padding:7px;border-radius:7px;border:.5px solid ${p.squad==='jv'?'var(--gold)':'var(--border)'};background:${p.squad==='jv'?'var(--goldl)':'none'};font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;color:${p.squad==='jv'?'#7a5c0a':'var(--muted)'}">JV</button>
+        <input type="number" id="pavg-${p.id}" value="${p.tryAvg||''}" placeholder="Try avg" min="25" max="70"
+          style="width:80px;padding:6px 8px;border:.5px solid var(--border);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:12px;text-align:center;outline:none;background:var(--card);color:var(--ink)"
+          onclick="event.stopPropagation()" onchange="saveAvg(${p.id},this.value)">
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleCard(id){
+  const ex=document.getElementById('pexpand-'+id);
+  const wasOpen=ex.classList.contains('open');
+  document.querySelectorAll('.p-expand.open').forEach(e=>e.classList.remove('open'));
+  if(!wasOpen)ex.classList.add('open');
+}
+function saveParent(id){
+  const p=roster.find(x=>x.id===id);if(!p)return;
+  const name=document.getElementById('pname-'+id).value.trim();
+  const phone=document.getElementById('ptel-'+id).value.replace(/\D/g,'');
+  if(!phone||phone.length<10){alert('Please enter a valid 10-digit number.');return;}
+  if(!p.parents)p.parents=[];
+  p.parents.push({name:name||'Parent',phone});
+  document.getElementById('pname-'+id).value='';
+  document.getElementById('ptel-'+id).value='';
+  persist();renderCoachRoster();
+}
+function removeParent(pid,pi){const p=roster.find(x=>x.id===pid);if(!p)return;p.parents.splice(pi,1);persist();renderCoachRoster();}
+function setSquad(id,sq){const p=roster.find(x=>x.id===id);if(!p)return;p.squad=sq;persist();renderCoachRoster();}
+function saveAvg(id,val){const p=roster.find(x=>x.id===id);if(!p)return;p.tryAvg=parseFloat(val)||null;persist();}
+
+/* ════════════════════════════════════════
+   COACH — EVENTS
+════════════════════════════════════════ */
+function addEvent(){
+  const type=document.getElementById('ev-type').value;
+  const date=document.getElementById('ev-date').value;
+  const name=document.getElementById('ev-name').value.trim();
+  const loc =document.getElementById('ev-loc').value.trim();
+  const time=document.getElementById('ev-time').value.trim();
+  if(!name||!date){alert('Name and date are required.');return;}
+  const id=Date.now();
+  events.push({id,type,date,name,loc,time});
+  events.sort((a,b)=>a.date.localeCompare(b.date));
+  document.getElementById('ev-name').value='';
+  document.getElementById('ev-loc').value='';
+  document.getElementById('ev-time').value='';
+  persist();renderEventsList();populateEventSelects();
+}
+function removeEvent(id){events=events.filter(e=>e.id!==id);persist();renderEventsList();populateEventSelects();}
+function renderEventsList(){
+  const el=document.getElementById('c-events-list');
+  if(!events.length){el.innerHTML='<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">No events added yet.</div>';return;}
+  el.innerHTML=events.map(e=>`
+    <div class="event-card">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">
+        <div>
+          ${evTypeChip(e.type)}
+          <div style="font-size:14px;font-weight:500;margin-top:4px">${e.name}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${fmtDate(e.date)}${e.time?' · '+e.time:''}</div>
+          ${e.loc?`<div style="font-size:11px;color:var(--muted)">${e.loc}</div>`:''}
+        </div>
+        <button onclick="removeEvent(${e.id})" style="background:none;border:none;cursor:pointer;font-size:16px;color:var(--muted);flex-shrink:0">×</button>
+      </div>
+    </div>`).join('');
+}
+
+function populateEventSelects(){
+  const opts=events.length
+    ?events.map(e=>`<option value="${e.id}">${fmtDate(e.date)} · ${e.name}</option>`).join('')
+    :'<option value="">No events yet — add one first</option>';
+  ['lineup-event-sel','carpool-event-sel'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){el.innerHTML='<option value="">— pick an event —</option>'+opts;}
+  });
+}
+
+/* ════════════════════════════════════════
+   COACH — LINEUP BUILDER
+════════════════════════════════════════ */
+function renderLineupSelector(){
+  const evId=parseInt(document.getElementById('lineup-event-sel').value);
+  const builder=document.getElementById('lineup-builder');
+  const out=document.getElementById('texts-output');
+  if(!evId){builder.style.display='none';out.style.display='none';return;}
+  if(!lineups[evId])lineups[evId]=[];
+  builder.style.display='block';
+  out.style.display='none';
+  renderLineupPlayers(evId);
+}
+
+function renderLineupPlayers(evId){
+  const sel=lineups[evId]||[];
+  document.getElementById('lineup-count').textContent=sel.length;
+  document.getElementById('btn-gen-texts').disabled=sel.length<1;
+  document.getElementById('lineup-player-list').innerHTML=roster.map(p=>{
+    const on=sel.includes(p.id);
+    return `<div class="lineup-row ${on?'playing':''}" id="lr-${p.id}" onclick="toggleLineup(${evId},${p.id})">
+      <div class="lineup-chk">${on?'✓':''}</div>
+      <div style="width:28px;height:28px;border-radius:50%;background:${COLORS[p.id-1]};color:${TCS[p.id-1]};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0">${ini(p)}</div>
+      <span class="lineup-name">${p.first} ${p.last}</span>
+      <span style="font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;background:${p.squad==='v'?'var(--greenb)':'var(--goldl)'};color:${p.squad==='v'?'var(--green)':'#7a5c0a'};flex-shrink:0">${p.squad==='v'?'V':'JV'}</span>
+      ${p.tryAvg?`<span style="font-size:12px;font-weight:700;color:var(--fern);flex-shrink:0">${p.tryAvg}</span>`:''}
+    </div>`;}).join('');
+}
+
+function toggleLineup(evId,pid){
+  if(!lineups[evId])lineups[evId]=[];
+  const idx=lineups[evId].indexOf(pid);
+  if(idx>=0)lineups[evId].splice(idx,1); else lineups[evId].push(pid);
+  persist();renderLineupPlayers(evId);
+}
+
+function generateTexts(){
+  const evId=parseInt(document.getElementById('lineup-event-sel').value);
+  const ev=events.find(e=>e.id===evId);
+  if(!ev)return;
+  const sel=(lineups[evId]||[]).map(id=>roster.find(p=>p.id===id)).filter(Boolean);
+  if(!sel.length)return;
+
+  const notPlaying=roster.filter(p=>!lineups[evId]?.includes(p.id));
+  const evLine=`${ev.name} · ${fmtDate(ev.date)}${ev.time?' · '+ev.time:''}${ev.loc?' · '+ev.loc:''}`;
+
+  // Player texts
+  document.getElementById('player-texts').innerHTML=sel.map(p=>{
+    const key=`ptxt_${evId}_${p.id}`;
+    const txt=`${p.first}, you're in the lineup for ${evLine}. Reply YES to confirm, or YES + RIDE if you need a carpool seat. Coach has 3 spots available. Go Trojans.`;
+    window[key]=txt;
+    return `<div class="msg-out">
+      <div class="msg-out-hdr player-hdr">
+        <div><div class="msg-out-title">${p.first} ${p.last}</div><div class="msg-out-sub">${p.parents&&p.parents.length?formatPhone(p.parents[0].phone):'No number on file'}</div></div>
+      </div>
+      <div class="msg-out-body">${txt}</div>
+      <button class="copy-btn" onclick="copyText('${key}',this)">📋 Copy</button>
+    </div>`;}).join('');
+
+  // Parent texts
+  document.getElementById('parent-texts').innerHTML=sel.map(p=>{
+    return (p.parents||[]).map((par,pi)=>{
+      const key=`partxt_${evId}_${p.id}_${pi}`;
+      const txt=`Hello — ${p.first} ${p.last} is in the lineup for ${evLine}. You can view the full event, sign up to attend, and coordinate carpool at the Fairway Forward parent portal. No login required — just enter this number when prompted. Go Trojans.`;
+      window[key]=txt;
+      return `<div class="msg-out">
+        <div class="msg-out-hdr parent-hdr">
+          <div><div class="msg-out-title">${par.name} (${p.first}'s parent)</div><div class="msg-out-sub">${formatPhone(par.phone)}</div></div>
+        </div>
+        <div class="msg-out-body">${txt}</div>
+        <button class="copy-btn" onclick="copyText('${key}',this)">📋 Copy</button>
+      </div>`;}).join('');}).join('');
+
+  // Bench notification
+  if(notPlaying.length){
+    const benchKey=`bench_${evId}`;
+    const benchTxt=notPlaying.map(p=>{
+      const t=`${p.first}, you're not in the lineup for ${evLine} — keep working. Next opportunity is coming. Coach`;
+      window[`bench_${evId}_${p.id}`]=t;
+      return `<div class="msg-out" style="opacity:.75">
+        <div class="msg-out-hdr" style="background:var(--surf)"><div class="msg-out-title" style="color:var(--muted)">${p.first} ${p.last} — not playing</div></div>
+        <div class="msg-out-body">${t}</div>
+        <button class="copy-btn" onclick="copyText('bench_${evId}_${p.id}',this)">📋 Copy</button>
+      </div>`;}).join('');
+    document.getElementById('player-texts').innerHTML+=`<div class="divider">Players not in this lineup</div>${benchTxt}`;
+  }
+
+  document.getElementById('texts-output').style.display='block';
+  document.getElementById('texts-output').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ════════════════════════════════════════
+   CARPOOL BOARD
+════════════════════════════════════════ */
+function renderCarpoolBoard(context, targetEl){
+  const selId=context==='coach'?'carpool-event-sel':null;
+  const evId=selId?parseInt(document.getElementById(selId).value):null;
+  const el=targetEl||document.getElementById('carpool-board-coach');
+  if(!evId||!el){if(el)el.innerHTML='';return;}
+  const ev=events.find(e=>e.id===evId);
+  if(!ev){el.innerHTML='';return;}
+
+  const board=carpool[evId]||[];
+  // Coach entry is always first
+  const coachEntry={name:'Coach',phone:'coach',seats:3,need:false,role:'coach'};
+
+  const offerers=[coachEntry,...board.filter(e=>e.seats>0&&!e.need)];
+  const needers=board.filter(e=>e.need);
+
+  let html=`<div class="card" style="background:#fdf9f0;border-color:#e8d8a0;margin-bottom:12px">
+    <div class="ct" style="color:#7a5c0a">Coach has 3 seats available</div>
+    <div style="font-size:12px;color:#7a5c0a">Players and parents can claim seats below.</div>
+  </div>`;
+
+  html+=`<div class="divider">Seats available</div>`;
+  offerers.forEach(e=>{
+    const taken=board.filter(r=>r.ridesWith===e.phone).length;
+    const open=e.seats-taken;
+    html+=`<div class="carpool-card">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div><div class="carpool-name">${e.name}</div><div class="carpool-seats">Offering ${e.seats} seats <span class="seat-pill ${open>0?'seat-open':'seat-full'}">${open} open</span></div></div>
+        ${context!=='coach'&&open>0?`<button onclick="claimRide(${evId},'${e.phone}')" style="padding:7px 13px;background:var(--forest);color:#fff;border:none;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer">Claim seat</button>`:''}
+      </div>
+    </div>`;
+  });
+
+  if(needers.length){
+    html+=`<div class="divider">Need a ride</div>`;
+    needers.forEach(e=>{
+      html+=`<div class="carpool-card">
+        <div class="carpool-name">${e.name}</div>
+        <div class="carpool-seats" style="color:var(--red)">Needs a ride${e.ridesWith?' → riding with '+e.ridesWith:''}</div>
+      </div>`;
+    });
+  }
+
+  if(context==='coach'){
+    html+=`<div class="divider">Add a ride offer</div>
+    <div class="card">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div><label class="form-label">Name</label><input type="text" id="cp-name-${evId}" placeholder="Parent name"></div>
+        <div><label class="form-label">Seats available</label><input type="number" id="cp-seats-${evId}" min="1" max="8" placeholder="e.g. 3"></div>
+      </div>
+      <button onclick="addCarpoolOffer(${evId})" style="width:100%;padding:10px;background:var(--forest);color:#fff;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer">Add offer</button>
+    </div>`;
+  }
+
+  el.innerHTML=html;
+}
+
+function addCarpoolOffer(evId){
+  const name=document.getElementById('cp-name-'+evId)?.value.trim();
+  const seats=parseInt(document.getElementById('cp-seats-'+evId)?.value)||0;
+  if(!name||!seats)return;
+  if(!carpool[evId])carpool[evId]=[];
+  carpool[evId].push({name,phone:'parent_'+Date.now(),seats,need:false});
+  document.getElementById('cp-name-'+evId).value='';
+  document.getElementById('cp-seats-'+evId).value='';
+  persist();renderCarpoolBoard('coach');
+}
+
+function claimRide(evId,driverPhone){
+  if(!activeParentPhone&&!activePlayerId){alert('Please sign in first.');return;}
+  const name=activeParentPhone?formatPhone(activeParentPhone):(()=>{const p=roster.find(x=>x.id===activePlayerId);return p?p.first+' '+p.last:'Player';})();
+  if(!carpool[evId])carpool[evId]=[];
+  // Remove existing need entry for this person
+  carpool[evId]=carpool[evId].filter(e=>e.phone!==(activeParentPhone||'p_'+activePlayerId));
+  carpool[evId].push({name,phone:activeParentPhone||'p_'+activePlayerId,seats:0,need:true,ridesWith:driverPhone});
+  persist();
+}
+
+/* ════════════════════════════════════════
+   PLAYER HOME
+════════════════════════════════════════ */
+function renderPlayerHome(){
+  const p=roster.find(x=>x.id===activePlayerId);if(!p)return;
+  document.getElementById('p-hero-name').textContent=p.first+' '+p.last;
+  document.getElementById('p-hero-sub').textContent=`${p.squad==='v'?'Varsity':'JV'} · Class of ${p.year==='Fr'?'2028':p.year==='So'?'2027':p.year==='Jr'?'2026':'2025'}`;
+  document.getElementById('p-squad').textContent=p.squad==='v'?'V':'JV';
+  document.getElementById('p-avg').textContent=p.tryAvg||'–';
+  const rank=roster.filter(x=>x.tryAvg!==null).sort((a,b)=>a.tryAvg-b.tryAvg).findIndex(x=>x.id===p.id)+1;
+  document.getElementById('p-rank').textContent=rank>0?('#'+rank):'–';
+
+  // Parent slots
+  renderPlayerParentSlots(p);
+
+  // Next event
+  const now=new Date().toISOString().split('T')[0];
+  const next=events.filter(e=>e.date>=now).sort((a,b)=>a.date.localeCompare(b.date))[0];
+  const nextEl=document.getElementById('p-next-event');
+  if(!next){nextEl.innerHTML='<div class="card"><div class="ct">Next event</div><div style="font-size:12px;color:var(--muted)">No upcoming events. Check back soon.</div></div>';return;}
+
+  const inLineup=lineups[next.id]&&lineups[next.id].includes(p.id);
+  const rsvpKey=`${next.id}_${p.id}`;
+  const myRsvp=rsvps[rsvpKey]||'';
+
+  nextEl.innerHTML=`<div class="card">
+    <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:10px">
+      ${evTypeChip(next.type)}
+      <div style="flex:1"><div style="font-size:14px;font-weight:500">${next.name}</div>
+      <div style="font-size:11px;color:var(--muted)">${fmtDate(next.date)}${next.time?' · '+next.time:''}</div>
+      ${next.loc?`<div style="font-size:11px;color:var(--muted)">${next.loc}</div>`:''}
+      </div>
+    </div>
+    ${inLineup?`
+      <div style="background:var(--greenb);border-radius:9px;padding:10px 12px;margin-bottom:10px;font-size:12px;color:var(--green);font-weight:500">✓ You're in the lineup for this event</div>
+      <div class="ct">Confirm your status</div>
+      <div class="rsvp-row">
+        <button class="rsvp-btn ${myRsvp==='yes'?'selected':''}" onclick="setRsvp('${next.id}',${p.id},'yes',this.closest('.rsvp-row'))">I'll be there ✓</button>
+        <button class="rsvp-btn need-ride ${myRsvp==='ride'?'selected':''}" onclick="setRsvp('${next.id}',${p.id},'ride',this.closest('.rsvp-row'))">I'll be there + need ride 🚗</button>
+      </div>
+      ${myRsvp?`<div style="font-size:11px;color:var(--fern);text-align:center;margin-top:4px">Response saved ✓</div>`:''}
+    `:`<div style="background:var(--surf);border-radius:9px;padding:10px 12px;font-size:12px;color:var(--muted)">Not in the lineup for this event. Keep working.</div>`}
+  </div>`;
+
+  // Carpool
+  const cpEl=document.getElementById('p-carpool-section');
+  if(inLineup){
+    cpEl.innerHTML=`<div class="page-title" style="margin-bottom:4px">Carpool</div><div class="page-sub">Coach has 3 seats · claim one if you need a ride</div><div id="p-cp-board"></div>`;
+    renderCarpoolBoard('player',document.getElementById('p-cp-board'));
+    // Inject event id for claimRide
+    document.querySelectorAll('#p-cp-board [onclick]').forEach(btn=>{
+      const orig=btn.getAttribute('onclick');
+      if(orig&&orig.includes('claimRide'))btn.setAttribute('onclick',orig.replace('claimRide(','claimRide('+next.id+',').replace('claimRide('+next.id+',claimRide','claimRide'));
+    });
+    // Fix: re-render with correct evId
+    const boardEl=document.getElementById('p-cp-board');
+    if(boardEl) renderCarpoolBoard_withId(next.id,'player',boardEl);
+  } else {
+    cpEl.innerHTML='';
+  }
+}
+
+function renderCarpoolBoard_withId(evId,context,el){
+  const board=carpool[evId]||[];
+  const coachEntry={name:'Coach',phone:'coach',seats:3,need:false,role:'coach'};
+  const offerers=[coachEntry,...board.filter(e=>e.seats>0&&!e.need)];
+  const needers=board.filter(e=>e.need);
+  let html=`<div class="divider">Seats available</div>`;
+  offerers.forEach(e=>{
+    const taken=board.filter(r=>r.ridesWith===e.phone).length;
+    const open=e.seats-taken;
+    html+=`<div class="carpool-card">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div><div class="carpool-name">${e.name}</div><div class="carpool-seats">Offering ${e.seats} <span class="seat-pill ${open>0?'seat-open':'seat-full'}">${open} open</span></div></div>
+        ${open>0?`<button onclick="claimRide(${evId},'${e.phone}');renderPlayerHome()" style="padding:7px 13px;background:var(--forest);color:#fff;border:none;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer">Claim</button>`:''}
+      </div>
+    </div>`;
+  });
+  if(needers.length){html+=`<div class="divider">Also need rides</div>`;needers.forEach(e=>{html+=`<div class="carpool-card"><div class="carpool-name">${e.name}</div><div class="carpool-seats" style="color:var(--red)">Needs a ride</div></div>`;});}
+  el.innerHTML=html;
+}
+
+function setRsvp(evId,pid,status,rowEl){
+  const key=`${evId}_${pid}`;
+  rsvps[key]=status;
+  if(status==='ride'){
+    const p=roster.find(x=>x.id===pid);
+    if(!carpool[evId])carpool[evId]=[];
+    carpool[evId]=carpool[evId].filter(e=>e.phone!=='p_'+pid);
+    carpool[evId].push({name:p?p.first+' '+p.last:'Player',phone:'p_'+pid,seats:0,need:true});
+  }
+  persist();renderPlayerHome();
+}
+
+/* Player parent slots */
+let parentSlotCount=1;
+function renderPlayerParentSlots(p){
+  const el=document.getElementById('p-parent-slots');
+  if(!p.parents||!p.parents.length){
+    el.innerHTML=parentSlotHTML(p.id,0);
+    return;
+  }
+  el.innerHTML=p.parents.map((par,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--greenb);border-radius:8px;margin-bottom:6px">
+      <div style="flex:1"><div style="font-size:12px;font-weight:500">${par.name}</div><div style="font-size:11px;color:var(--fern)">${formatPhone(par.phone)}</div></div>
+      <button onclick="removePlayerParent(${p.id},${i})" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted)">×</button>
+    </div>`).join('')+parentSlotHTML(p.id, p.parents.length);
+}
+function parentSlotHTML(pid, idx){
+  return `<div id="pslot-${pid}">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+      <input type="text" id="slot-name-${pid}" placeholder="Parent name">
+      <input type="tel" id="slot-tel-${pid}" placeholder="Cell number">
+    </div>
+    <button onclick="savePlayerParent(${pid})" style="width:100%;padding:9px;background:var(--fern);color:#fff;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer">Save contact</button>
+  </div>`;
+}
+function savePlayerParent(pid){
+  const p=roster.find(x=>x.id===pid);if(!p)return;
+  const name=document.getElementById('slot-name-'+pid)?.value.trim();
+  const phone=(document.getElementById('slot-tel-'+pid)?.value||'').replace(/\D/g,'');
+  if(!phone||phone.length<10){alert('Please enter a valid 10-digit number.');return;}
+  if(!p.parents)p.parents=[];
+  p.parents.push({name:name||'Parent',phone});
+  persist();renderPlayerParentSlots(p);
+}
+function removePlayerParent(pid,idx){const p=roster.find(x=>x.id===pid);if(!p)return;p.parents.splice(idx,1);persist();renderPlayerParentSlots(p);}
+function addParentSlot(){renderPlayerParentSlots(roster.find(p=>p.id===activePlayerId));}
+
+/* ════════════════════════════════════════
+   PARENT HOME
+════════════════════════════════════════ */
+function renderParentHome(){
+  const phone=activeParentPhone;
+  // Find which player(s) this parent belongs to
+  const myPlayers=roster.filter(p=>p.parents&&p.parents.some(par=>par.phone===phone));
+  const parEl=document.getElementById('par-player-display');
+  if(myPlayers.length){
+    parEl.innerHTML=myPlayers.map(p=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0">
+        <div style="width:32px;height:32px;border-radius:50%;background:${COLORS[p.id-1]};color:${TCS[p.id-1]};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600">${ini(p)}</div>
+        <div><div style="font-size:13px;font-weight:500">${p.first} ${p.last}</div><div style="font-size:11px;color:var(--muted)">${p.squad==='v'?'Varsity':'JV'} · ${p.year}</div></div>
+      </div>`).join('');
+  } else {
+    parEl.innerHTML='<div style="font-size:12px;color:var(--muted);line-height:1.6">Your number isn\'t linked to a player yet. Ask your son to add your number in the app under Player → Parent contact.</div>';
+  }
+
+  // Events
+  const now=new Date().toISOString().split('T')[0];
+  const upcoming=events.filter(e=>e.date>=now).sort((a,b)=>a.date.localeCompare(b.date));
+  const evEl=document.getElementById('par-events-list');
+  if(!upcoming.length){evEl.innerHTML='<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">No upcoming events yet.</div>';return;}
+
+  evEl.innerHTML=upcoming.map(ev=>{
+    const sigKey=`${ev.id}_${phone}`;
+    const sig=parentSignups[sigKey]||{attending:false,bring:''};
+    const evCp=carpool[ev.id]||[];
+    const myRide=evCp.find(e=>e.phone===phone);
+
+    return `<div class="event-card">
+      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">
+        ${evTypeChip(ev.type)}
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:500">${ev.name}</div>
+          <div style="font-size:11px;color:var(--muted)">${fmtDate(ev.date)}${ev.time?' · '+ev.time:''}</div>
+          ${ev.loc?`<div style="font-size:11px;color:var(--muted)">${ev.loc}</div>`:''}
+        </div>
+      </div>
+      <div class="ct">Will you attend?</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <button class="attend-btn ${sig.attending?'yes':''}" onclick="setAttend('${ev.id}','${phone}',true,this)">${sig.attending?'✓ Attending':'Yes, I\'ll be there'}</button>
+        <button class="attend-btn ${!sig.attending&&sig.attending!==undefined&&sig.attending===false?'yes':''}" onclick="setAttend('${ev.id}','${phone}',false,this)">Can\'t make it</button>
+      </div>
+      ${sig.attending?`
+        <div class="ct">Offering to bring anything?</div>
+        <input class="bring-input" type="text" value="${sig.bring||''}" placeholder="e.g. waters, snacks, extra hats…"
+          onchange="setBring('${ev.id}','${phone}',this.value)">
+      `:''}
+      <div class="ct" style="margin-top:10px">Carpool</div>
+      ${renderParentCarpoolBlock(ev.id,phone)}
+    </div>`;
+  }).join('');
+}
+
+function renderParentCarpoolBlock(evId,phone){
+  const board=carpool[evId]||[];
+  const myEntry=board.find(e=>e.phone===phone);
+  const coachSeats=3-board.filter(e=>e.ridesWith==='coach').length;
+
+  let html='';
+  if(myEntry){
+    if(myEntry.seats>0)html=`<div style="font-size:12px;color:var(--green);margin-bottom:6px">✓ You're offering ${myEntry.seats} seats</div>`;
+    if(myEntry.need)html=`<div style="font-size:12px;color:var(--blue);margin-bottom:6px">${myEntry.ridesWith?'✓ Ride arranged':'You\'ve requested a ride'}</div>`;
+  }
+
+  html+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <button onclick="showParentCarpoolOffer(${evId},'${phone}')" style="padding:9px;border:.5px solid var(--border);border-radius:8px;background:none;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;color:var(--ink);cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--fern)'" onmouseout="this.style.borderColor='var(--border)'">Offer seats 🚗</button>
+    <button onclick="requestRideParent(${evId},'${phone}')" style="padding:9px;border:.5px solid var(--border);border-radius:8px;background:none;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;color:var(--ink);cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'">Need a ride</button>
+  </div>
+  <div id="par-cp-form-${evId}" style="display:none;margin-top:8px">
+    <input type="text" id="par-cp-name-${evId}-${phone.slice(-4)}" placeholder="Your name" style="margin-bottom:6px">
+    <div style="display:flex;gap:8px">
+      <input type="number" id="par-cp-seats-${evId}-${phone.slice(-4)}" placeholder="Seats" min="1" max="7" style="flex:1">
+      <button onclick="saveParentCarpoolOffer(${evId},'${phone}')" style="padding:9px 14px;background:var(--forest);color:#fff;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer">Save</button>
+    </div>
+  </div>`;
+  return html;
+}
+
+function showParentCarpoolOffer(evId,phone){
+  document.getElementById('par-cp-form-'+evId).style.display='block';
+}
+function saveParentCarpoolOffer(evId,phone){
+  const sfx=phone.slice(-4);
+  const name=document.getElementById('par-cp-name-'+evId+'-'+sfx)?.value.trim();
+  const seats=parseInt(document.getElementById('par-cp-seats-'+evId+'-'+sfx)?.value)||0;
+  if(!name||!seats)return;
+  if(!carpool[evId])carpool[evId]=[];
+  carpool[evId]=carpool[evId].filter(e=>e.phone!==phone);
+  carpool[evId].push({name,phone,seats,need:false});
+  persist();renderParentHome();
+}
+function requestRideParent(evId,phone){
+  const myPlayers=roster.filter(p=>p.parents&&p.parents.some(par=>par.phone===phone));
+  const name=myPlayers.length?myPlayers[0].first+'\'s parent':formatPhone(phone);
+  if(!carpool[evId])carpool[evId]=[];
+  carpool[evId]=carpool[evId].filter(e=>e.phone!==phone);
+  carpool[evId].push({name,phone,seats:0,need:true});
+  persist();renderParentHome();
+}
+function setAttend(evId,phone,val,btn){
+  const key=`${evId}_${phone}`;
+  if(!parentSignups[key])parentSignups[key]={attending:false,bring:''};
+  parentSignups[key].attending=val;
+  persist();renderParentHome();
+}
+function setBring(evId,phone,val){
+  const key=`${evId}_${phone}`;
+  if(!parentSignups[key])parentSignups[key]={attending:true,bring:''};
+  parentSignups[key].bring=val;
+  persist();
+}
+
+/* ════════════════════════════════════════
+   INIT
+════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded',()=>{
+  hydrate();
+  // Set today's date on event form
+  const today=new Date().toISOString().split('T')[0];
+  const dateEl=document.getElementById('ev-date');
+  if(dateEl)dateEl.value=today;
+});
+</script>
+</body>
+</html>

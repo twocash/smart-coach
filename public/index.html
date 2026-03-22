@@ -1106,8 +1106,8 @@ async function renderParentHome(){
       </div>
       <div class="ct">Will you attend?</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-        <button class="attend-btn ${mySig.attending?'yes':''}" onclick="setAttend('${ev.id}','${phone}',true,this)">${mySig.attending?'✓ Attending':'Yes, I'll be there'}</button>
-        <button class="attend-btn" onclick="setAttend('${ev.id}','${phone}',false,this)">Can't make it</button>
+        <button class="attend-btn ${mySig.attending?'yes':''}" onclick="setAttend('${ev.id}','${phone}',true,this)">${mySig.attending?'✓ Attending':'Yes, I&#39;ll be there'}</button>
+        <button class="attend-btn" onclick="setAttend('${ev.id}','${phone}',false,this)">Can&#39;t make it</button>
       </div>
       ${mySig.attending?`
         <div class="ct">Offering to bring anything?</div>
@@ -1197,11 +1197,11 @@ async function renderPlayerHome(){
       </div>
     </div>
     ${inLineup?`
-      <div style="background:var(--greenb);border-radius:9px;padding:10px 12px;margin-bottom:10px;font-size:12px;color:var(--green);font-weight:500">✓ You're in the lineup for this event</div>
+      <div style="background:var(--greenb);border-radius:9px;padding:10px 12px;margin-bottom:10px;font-size:12px;color:var(--green);font-weight:500">✓ You&#39;re in the lineup for this event</div>
       <div class="ct">Confirm your status</div>
       <div class="rsvp-row">
-        <button class="rsvp-btn ${myStatus==='yes'?'selected':''}" onclick="setRsvp('${next.id}',${p.id},'yes',this.closest('.rsvp-row'))">I'll be there ✓</button>
-        <button class="rsvp-btn need-ride ${myStatus==='ride'?'selected':''}" onclick="setRsvp('${next.id}',${p.id},'ride',this.closest('.rsvp-row'))">I'll be there + need ride 🚗</button>
+        <button class="rsvp-btn ${myStatus==='yes'?'selected':''}" onclick="setRsvp('${next.id}',${p.id},'yes',this.closest('.rsvp-row'))">I&#39;ll be there ✓</button>
+        <button class="rsvp-btn need-ride ${myStatus==='ride'?'selected':''}" onclick="setRsvp('${next.id}',${p.id},'ride',this.closest('.rsvp-row'))">I&#39;ll be there + need ride 🚗</button>
       </div>
       ${myStatus?`<div style="font-size:11px;color:var(--fern);text-align:center;margin-top:4px">Response saved ✓</div>`:''}
     `:`<div style="background:var(--surf);border-radius:9px;padding:10px 12px;font-size:12px;color:var(--muted)">Not in the lineup for this event. Keep working.</div>`}

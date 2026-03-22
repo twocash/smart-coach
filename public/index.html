@@ -459,66 +459,53 @@ input:focus,select:focus,textarea:focus{border-color:var(--fern);}
 
 <script>
 /* ════════════════════════════════════════
-   STORAGE
+   API CLIENT
 ════════════════════════════════════════ */
-const SKEY     = 'ff_season_2026';
-const PIN_KEY  = 'ff_coach_pin_season';
+const API = '/api';
 
-function persist(){
-  try{
-    localStorage.setItem(SKEY,JSON.stringify({roster,events,lineups,carpool,parentSignups,rsvps}));
-    const c=document.getElementById('save-chip');
-    if(c){c.style.color='rgba(240,208,128,.75)';setTimeout(()=>c.style.color='rgba(255,255,255,.38)',1400);}
-  }catch(e){}
+// Session stored in sessionStorage — clears on tab close
+function getToken(){ return sessionStorage.getItem('ff_token'); }
+function setToken(t){ sessionStorage.setItem('ff_token', t); }
+function clearToken(){ sessionStorage.removeItem('ff_token'); }
+
+function authHeaders(){
+  const t = getToken();
+  return t ? { 'Content-Type':'application/json', 'Authorization':'Bearer '+t }
+           : { 'Content-Type':'application/json' };
 }
-function hydrate(){
-  try{
-    const raw=localStorage.getItem(SKEY);
-    if(!raw)return;
-    const d=JSON.parse(raw);
-    if(d.roster)roster=d.roster;
-    if(d.events)events=d.events;
-    if(d.lineups)lineups=d.lineups;
-    if(d.carpool)carpool=d.carpool;
-    if(d.parentSignups)parentSignups=d.parentSignups;
-    if(d.rsvps)rsvps=d.rsvps;
-  }catch(e){}
+
+async function api(method, path, body){
+  const opts = { method, headers: authHeaders() };
+  if(body) opts.body = JSON.stringify(body);
+  const r = await fetch(API + path, opts);
+  const json = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(json.error || r.statusText);
+  return json;
 }
-function getPin(){return localStorage.getItem(PIN_KEY)||'';}
-function setPin(p){localStorage.setItem(PIN_KEY,p);}
-function pinIsSet(){return getPin().length===4;}
+
+// Thin wrappers
+const GET  = (path)        => api('GET',    path);
+const POST = (path, body)  => api('POST',   path, body);
+const PATCH= (path, body)  => api('PATCH',  path, body);
+const DEL  = (path)        => api('DELETE', path);
+
+function flashSaved(){
+  const c=document.getElementById('save-chip');
+  if(c){c.style.color='rgba(240,208,128,.75)';setTimeout(()=>c.style.color='rgba(255,255,255,.38)',1400);}
+}
 
 /* ════════════════════════════════════════
-   STATE
+   STATE — in-memory cache (no localStorage)
 ════════════════════════════════════════ */
-let pinBuf='', pinMode='enter', newPinBuf='';
-let activePlayerId=null, activeParentPhone='';
+let pinBuf='', pinMode='enter';
+let activePlayerId=null, activePlayerUUID=null;
+let activeParentPhone='';
+let currentSession=null;
 
-// ROSTER — seeded from the 2025 tryout results
-// These 16 are the team; sorted by tryout avg (lowest = varsity)
-let roster = [
-  {id:1,first:'Nolan',  last:'Armour',   year:'Sr',tryAvg:null,parents:[],squad:'v'},
-  {id:2,first:'Oscar',  last:'Bard',     year:'Jr',tryAvg:null,parents:[],squad:'v'},
-  {id:3,first:'Charlie',last:'Belch',    year:'Sr',tryAvg:null,parents:[],squad:'v'},
-  {id:4,first:'Owen',   last:'Bentzel',  year:'So',tryAvg:null,parents:[],squad:'v'},
-  {id:5,first:'Sam',    last:'Berzai',   year:'Jr',tryAvg:null,parents:[],squad:'v'},
-  {id:6,first:'Ben',    last:'Bowling',  year:'Fr',tryAvg:null,parents:[],squad:'v'},
-  {id:7,first:'James',  last:'Buckland', year:'Fr',tryAvg:null,parents:[],squad:'v'},
-  {id:8,first:'Thomas', last:'Dilts',    year:'Fr',tryAvg:null,parents:[],squad:'v'},
-  {id:9,first:'William',last:'Dilts',    year:'Jr',tryAvg:null,parents:[],squad:'jv'},
-  {id:10,first:'Van',   last:'Driscoll', year:'So',tryAvg:null,parents:[],squad:'jv'},
-  {id:11,first:'Grey',  last:'Durham',   year:'Sr',tryAvg:null,parents:[],squad:'jv'},
-  {id:12,first:'Ryan',  last:'Ellis',    year:'So',tryAvg:null,parents:[],squad:'jv'},
-  {id:13,first:'Kellen',last:'Ford',     year:'Sr',tryAvg:null,parents:[],squad:'jv'},
-  {id:14,first:'Brendon',last:'Gillen',  year:'So',tryAvg:null,parents:[],squad:'jv'},
-  {id:15,first:'Nolan', last:'Gillen',   year:'So',tryAvg:null,parents:[],squad:'jv'},
-  {id:16,first:'Jack',  last:'Gustitus', year:'Fr',tryAvg:null,parents:[],squad:'jv'},
-];
-let events = [];       // [{id,type,name,loc,date,time}]
-let lineups = {};      // eventId → [playerId,...]
-let carpool = {};      // eventId → [{name,phone,seats,need,role}]
-let parentSignups = {};// eventId → [{phone,playerName,attending,bring}]
-let rsvps = {};        // eventId_playerId → {status:'yes'|'ride'}
+let roster  = [];
+let events  = [];
+let lineups = {};
+let rsvps   = {};
 
 /* ════════════════════════════════════════
    HELPERS
@@ -534,89 +521,190 @@ function copyText(key,btn){const t=window[key];if(!t)return;navigator.clipboard.
    SCREEN ROUTING
 ════════════════════════════════════════ */
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('show'));document.getElementById(id).classList.add('show');}
-function goWelcome(){showScreen('screen-welcome');}
+function goWelcome(){clearToken();currentSession=null;showScreen('screen-welcome');}
 
 /* ════════════════════════════════════════
-   PIN — programmable
+   PIN AUTH — server-side
 ════════════════════════════════════════ */
 function goCoachPin(){
-  pinBuf='';updateDots();document.getElementById('pin-err').textContent='';
-  if(!pinIsSet()){
-    pinMode='set-new';
-    document.getElementById('pin-hed').textContent='Create your coach PIN';
-    document.getElementById('pin-sub').textContent='Choose a 4-digit PIN';
-  } else {
-    pinMode='enter';
-    document.getElementById('pin-hed').textContent='Coach access';
-    document.getElementById('pin-sub').textContent='Enter your PIN';
-  }
+  pinBuf='';updateDots();
+  document.getElementById('pin-err').textContent='';
+  document.getElementById('pin-hed').textContent='Coach access';
+  document.getElementById('pin-sub').textContent='Enter your PIN';
+  pinMode='enter-coach';
   showScreen('screen-pin');
 }
+
 function pk(k){if(pinBuf.length>=4)return;pinBuf+=k;updateDots();if(pinBuf.length===4)setTimeout(handlePin,180);}
 function pd(){pinBuf=pinBuf.slice(0,-1);updateDots();document.getElementById('pin-err').textContent='';}
 function updateDots(){for(let i=0;i<4;i++){const d=document.getElementById('pd'+i);d.classList.toggle('filled',i<pinBuf.length);d.classList.remove('error');}}
-function handlePin(){
-  if(pinMode==='set-new'){
-    newPinBuf=pinBuf;pinBuf='';updateDots();
-    pinMode='confirm-new';
-    document.getElementById('pin-hed').textContent='Confirm your PIN';
-    document.getElementById('pin-sub').textContent='Enter the same 4 digits again';
-    return;
-  }
-  if(pinMode==='confirm-new'){
-    if(pinBuf===newPinBuf){setPin(pinBuf);pinBuf='';updateDots();enterCoach();}
-    else{
+
+async function handlePin(){
+  if(pinMode==='enter-coach'){
+    try{
+      const r = await POST('/auth',{role:'coach',pin:pinBuf});
+      setToken(r.token);
+      currentSession=r.user;
+      pinBuf='';updateDots();
+      enterCoach();
+    }catch(e){
+      document.getElementById('pin-err').textContent=e.message==='No coach account found. Create one first.'?'No coach PIN set yet — create one below.':e.message;
       for(let i=0;i<4;i++)document.getElementById('pd'+i).classList.add('error');
-      document.getElementById('pin-err').textContent='Didn\'t match. Try again.';
-      setTimeout(()=>{pinBuf='';updateDots();pinMode='set-new';document.getElementById('pin-hed').textContent='Create your coach PIN';document.getElementById('pin-sub').textContent='Choose a 4-digit PIN';document.getElementById('pin-err').textContent='';},1000);
+      // If no coach exists yet, offer to create
+      if(e.message.includes('No coach account')){
+        setTimeout(()=>{
+          pinBuf='';updateDots();
+          document.getElementById('pin-err').textContent='';
+          document.getElementById('pin-hed').textContent='Create coach PIN';
+          document.getElementById('pin-sub').textContent='Choose a 4-digit PIN';
+          pinMode='setup-coach-1';
+        },1200);
+      } else {
+        setTimeout(()=>{pinBuf='';updateDots();document.getElementById('pin-err').textContent='';},900);
+      }
     }
     return;
   }
-  if(pinBuf===getPin()){enterCoach();}
-  else{
-    for(let i=0;i<4;i++)document.getElementById('pd'+i).classList.add('error');
-    document.getElementById('pin-err').textContent='Wrong PIN.';
-    setTimeout(()=>{pinBuf='';updateDots();},900);
+  if(pinMode==='setup-coach-1'){
+    window._newPin=pinBuf; pinBuf=''; updateDots();
+    document.getElementById('pin-hed').textContent='Confirm PIN';
+    document.getElementById('pin-sub').textContent='Enter the same digits again';
+    pinMode='setup-coach-2';
+    return;
+  }
+  if(pinMode==='setup-coach-2'){
+    if(pinBuf!==window._newPin){
+      for(let i=0;i<4;i++)document.getElementById('pd'+i).classList.add('error');
+      document.getElementById('pin-err').textContent="Didn't match. Try again.";
+      setTimeout(()=>{pinBuf='';updateDots();document.getElementById('pin-err').textContent='';document.getElementById('pin-hed').textContent='Create coach PIN';document.getElementById('pin-sub').textContent='Choose a 4-digit PIN';pinMode='setup-coach-1';},1000);
+      return;
+    }
+    try{
+      const r = await POST('/auth/setup',{role:'coach',pin:pinBuf});
+      // Now log in
+      const login = await POST('/auth',{role:'coach',pin:pinBuf});
+      setToken(login.token);
+      currentSession=login.user;
+      pinBuf='';updateDots();
+      enterCoach();
+    }catch(e){
+      document.getElementById('pin-err').textContent=e.message;
+      setTimeout(()=>{pinBuf='';updateDots();},900);
+    }
+    return;
+  }
+  if(pinMode==='enter-player'){
+    try{
+      const r = await POST('/auth',{role:'player',pin:pinBuf,identifier:String(activePlayerId)});
+      setToken(r.token);
+      currentSession=r.user;
+      activePlayerUUID=r.user.playerId;
+      const p=roster.find(x=>x.legacy_id===activePlayerId||x.id===activePlayerId);
+      if(p)document.getElementById('p-tb-name').textContent=p.first;
+      pinBuf='';updateDots();
+      showScreen('screen-player');
+      renderPlayerHome();
+    }catch(e){
+      document.getElementById('pin-err').textContent=e.message;
+      for(let i=0;i<4;i++)document.getElementById('pd'+i).classList.add('error');
+      setTimeout(()=>{pinBuf='';updateDots();document.getElementById('pin-err').textContent='';},900);
+    }
+    return;
   }
 }
-function enterCoach(){pinBuf='';updateDots();showScreen('screen-coach');renderCoachRoster();populateEventSelects();}
+
+async function enterCoach(){
+  showScreen('screen-coach');
+  await loadRoster();
+  await loadEvents();
+  renderCoachRoster();
+  populateEventSelects();
+}
+
+/* ════════════════════════════════════════
+   API LOADERS
+════════════════════════════════════════ */
+async function loadRoster(){
+  try{
+    const data = await GET('/players');
+    roster = data.map(p=>({
+      id: p.legacy_id, uuid: p.id,
+      first: p.first, last: p.last,
+      year: p.year, squad: p.squad,
+      tryAvg: p.try_avg,
+      parents: (p.parents||[]).map(par=>({id:par.id,name:par.name,phone:par.phone}))
+    }));
+  }catch(e){console.error('loadRoster:',e);}
+}
+
+async function loadEvents(){
+  try{
+    const data = await GET('/events');
+    events = data.map(e=>({
+      id: e.id, type: e.type, name: e.name,
+      loc: e.location, date: e.date, time: e.tee_time
+    }));
+  }catch(e){console.error('loadEvents:',e);}
+}
+
+async function loadLineupForEvent(eventId){
+  try{
+    const data = await GET('/lineups?event_id='+eventId);
+    lineups[eventId] = data;
+  }catch(e){console.error('loadLineup:',e);}
+}
 
 /* ════════════════════════════════════════
    PLAYER PICKER
 ════════════════════════════════════════ */
-function goPlayerPicker(){document.getElementById('player-search').value='';renderPlayerPicker();showScreen('screen-player-picker');}
+async function goPlayerPicker(){
+  if(!roster.length) await loadRoster();
+  document.getElementById('player-search').value='';
+  renderPlayerPicker();
+  showScreen('screen-player-picker');
+}
+
 function renderPlayerPicker(){
   const q=(document.getElementById('player-search').value||'').toLowerCase();
   const list=roster.filter(p=>!q||(p.first+' '+p.last).toLowerCase().includes(q));
   document.getElementById('player-picker-list').innerHTML=list.length
-    ?list.map(p=>`<button class="picker-btn" onclick="loginPlayer(${p.id})">
-        <div style="width:32px;height:32px;border-radius:50%;background:${COLORS[p.id-1]};color:${TCS[p.id-1]};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0">${ini(p)}</div>
+    ?list.map(p=>`<button class="picker-btn" onclick="selectPlayerForPin(${p.id})">
+        <div style="width:32px;height:32px;border-radius:50%;background:${COLORS[(p.id-1)%16]};color:${TCS[(p.id-1)%16]};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0">${ini(p)}</div>
         <div style="flex:1;font-size:13px;font-weight:500">${p.first} ${p.last}</div>
         <span style="font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;background:${p.squad==='v'?'var(--greenb)':'var(--goldl)'};color:${p.squad==='v'?'var(--green)':'#7a5c0a'}">${p.squad==='v'?'Varsity':'JV'}</span>
       </button>`).join('')
     :'<div style="text-align:center;padding:20px;color:var(--muted);font-size:12px">Not on the roster yet.</div>';
 }
-function loginPlayer(id){
-  activePlayerId=id;
-  const p=roster.find(x=>x.id===id);
-  document.getElementById('p-tb-name').textContent=p.first;
-  showScreen('screen-player');
-  renderPlayerHome();
+
+function selectPlayerForPin(legacyId){
+  activePlayerId = legacyId;
+  const p = roster.find(x=>x.id===legacyId);
+  pinBuf=''; updateDots();
+  document.getElementById('pin-err').textContent='';
+  document.getElementById('pin-hed').textContent= p ? p.first+' '+p.last : 'Player';
+  document.getElementById('pin-sub').textContent='Enter your PIN';
+  pinMode='enter-player';
+  showScreen('screen-pin');
 }
 
 /* ════════════════════════════════════════
    PARENT ENTRY
 ════════════════════════════════════════ */
 function goParentEntry(){showScreen('screen-parent-entry');}
-function loginParent(){
+
+async function loginParent(){
   const raw=document.getElementById('parent-phone-input').value.trim();
   const phone=raw.replace(/\D/g,'');
   if(phone.length<10){alert('Please enter a valid 10-digit phone number.');return;}
   activeParentPhone=phone;
-  document.getElementById('par-tb-phone').textContent=formatPhone(phone);
-  showScreen('screen-parent');
-  renderParentHome();
+  pinBuf=''; updateDots();
+  document.getElementById('pin-err').textContent='';
+  document.getElementById('pin-hed').textContent='Parent access';
+  document.getElementById('pin-sub').textContent='Enter your PIN';
+  pinMode='enter-parent';
+  showScreen('screen-pin');
 }
+
 function formatPhone(p){if(p.length===10)return`(${p.slice(0,3)}) ${p.slice(3,6)}-${p.slice(6)}`;return p;}
 
 /* ════════════════════════════════════════
@@ -689,40 +777,63 @@ function toggleCard(id){
   document.querySelectorAll('.p-expand.open').forEach(e=>e.classList.remove('open'));
   if(!wasOpen)ex.classList.add('open');
 }
-function saveParent(id){
+async function saveParent(id){
   const p=roster.find(x=>x.id===id);if(!p)return;
   const name=document.getElementById('pname-'+id).value.trim();
   const phone=document.getElementById('ptel-'+id).value.replace(/\D/g,'');
   if(!phone||phone.length<10){alert('Please enter a valid 10-digit number.');return;}
-  if(!p.parents)p.parents=[];
-  p.parents.push({name:name||'Parent',phone});
-  document.getElementById('pname-'+id).value='';
-  document.getElementById('ptel-'+id).value='';
-  persist();renderCoachRoster();
+  try{
+    await POST('/players/parents',{player_id:p.uuid,name:name||'Parent',phone});
+    document.getElementById('pname-'+id).value='';
+    document.getElementById('ptel-'+id).value='';
+    await loadRoster(); renderCoachRoster(); flashSaved();
+  }catch(e){alert(e.message);}
 }
-function removeParent(pid,pi){const p=roster.find(x=>x.id===pid);if(!p)return;p.parents.splice(pi,1);persist();renderCoachRoster();}
-function setSquad(id,sq){const p=roster.find(x=>x.id===id);if(!p)return;p.squad=sq;persist();renderCoachRoster();}
-function saveAvg(id,val){const p=roster.find(x=>x.id===id);if(!p)return;p.tryAvg=parseFloat(val)||null;persist();}
+async function removeParent(pid,parentDbId){
+  try{
+    await DEL('/players/parents?id='+parentDbId);
+    await loadRoster(); renderCoachRoster(); flashSaved();
+  }catch(e){alert(e.message);}
+}
+async function setSquad(id,sq){
+  const p=roster.find(x=>x.id===id);if(!p)return;
+  try{
+    await PATCH('/players?id='+p.uuid,{squad:sq});
+    await loadRoster(); renderCoachRoster(); flashSaved();
+  }catch(e){alert(e.message);}
+}
+async function saveAvg(id,val){
+  const p=roster.find(x=>x.id===id);if(!p)return;
+  try{
+    await PATCH('/players?id='+p.uuid,{try_avg:parseFloat(val)||null});
+    await loadRoster(); flashSaved();
+  }catch(e){alert(e.message);}
+}
 
 /* ════════════════════════════════════════
    COACH — EVENTS
 ════════════════════════════════════════ */
-function addEvent(){
+async function addEvent(){
   const type=document.getElementById('ev-type').value;
   const date=document.getElementById('ev-date').value;
   const name=document.getElementById('ev-name').value.trim();
   const loc =document.getElementById('ev-loc').value.trim();
   const time=document.getElementById('ev-time').value.trim();
   if(!name||!date){alert('Name and date are required.');return;}
-  const id=Date.now();
-  events.push({id,type,date,name,loc,time});
-  events.sort((a,b)=>a.date.localeCompare(b.date));
-  document.getElementById('ev-name').value='';
-  document.getElementById('ev-loc').value='';
-  document.getElementById('ev-time').value='';
-  persist();renderEventsList();populateEventSelects();
+  try{
+    await POST('/events',{type,date,name,location:loc,tee_time:time});
+    document.getElementById('ev-name').value='';
+    document.getElementById('ev-loc').value='';
+    document.getElementById('ev-time').value='';
+    await loadEvents(); renderEventsList(); populateEventSelects(); flashSaved();
+  }catch(e){alert(e.message);}
 }
-function removeEvent(id){events=events.filter(e=>e.id!==id);persist();renderEventsList();populateEventSelects();}
+async function removeEvent(id){
+  try{
+    await DEL('/events?id='+id);
+    await loadEvents(); renderEventsList(); populateEventSelects(); flashSaved();
+  }catch(e){alert(e.message);}
+}
 function renderEventsList(){
   const el=document.getElementById('c-events-list');
   if(!events.length){el.innerHTML='<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">No events added yet.</div>';return;}
@@ -753,37 +864,46 @@ function populateEventSelects(){
 /* ════════════════════════════════════════
    COACH — LINEUP BUILDER
 ════════════════════════════════════════ */
-function renderLineupSelector(){
-  const evId=parseInt(document.getElementById('lineup-event-sel').value);
+async function renderLineupSelector(){
+  const evId=document.getElementById('lineup-event-sel').value;
   const builder=document.getElementById('lineup-builder');
   const out=document.getElementById('texts-output');
   if(!evId){builder.style.display='none';out.style.display='none';return;}
-  if(!lineups[evId])lineups[evId]=[];
+  await loadLineupForEvent(evId);
   builder.style.display='block';
   out.style.display='none';
   renderLineupPlayers(evId);
 }
 
 function renderLineupPlayers(evId){
-  const sel=lineups[evId]||[];
+  const sel=lineups[evId]||[]; // array of player UUIDs
   document.getElementById('lineup-count').textContent=sel.length;
   document.getElementById('btn-gen-texts').disabled=sel.length<1;
   document.getElementById('lineup-player-list').innerHTML=roster.map(p=>{
-    const on=sel.includes(p.id);
-    return `<div class="lineup-row ${on?'playing':''}" id="lr-${p.id}" onclick="toggleLineup(${evId},${p.id})">
+    const on=sel.includes(p.uuid);
+    const ci=(p.id-1)%16;
+    return `<div class="lineup-row ${on?'playing':''}" id="lr-${p.id}" onclick="toggleLineup('${evId}',${p.id})">
       <div class="lineup-chk">${on?'✓':''}</div>
-      <div style="width:28px;height:28px;border-radius:50%;background:${COLORS[p.id-1]};color:${TCS[p.id-1]};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0">${ini(p)}</div>
+      <div style="width:28px;height:28px;border-radius:50%;background:${COLORS[ci]};color:${TCS[ci]};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0">${ini(p)}</div>
       <span class="lineup-name">${p.first} ${p.last}</span>
       <span style="font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;background:${p.squad==='v'?'var(--greenb)':'var(--goldl)'};color:${p.squad==='v'?'var(--green)':'#7a5c0a'};flex-shrink:0">${p.squad==='v'?'V':'JV'}</span>
       ${p.tryAvg?`<span style="font-size:12px;font-weight:700;color:var(--fern);flex-shrink:0">${p.tryAvg}</span>`:''}
     </div>`;}).join('');
 }
 
-function toggleLineup(evId,pid){
-  if(!lineups[evId])lineups[evId]=[];
-  const idx=lineups[evId].indexOf(pid);
-  if(idx>=0)lineups[evId].splice(idx,1); else lineups[evId].push(pid);
-  persist();renderLineupPlayers(evId);
+async function toggleLineup(evId,pid){
+  // pid here is legacy_id; get uuid
+  const player = roster.find(p=>p.id===pid);
+  if(!player) return;
+  const playerUUID = player.uuid;
+  if(!lineups[evId]) lineups[evId]=[];
+  const inLineup = lineups[evId].includes(playerUUID);
+  try{
+    await POST('/lineups',{event_id:evId, player_id:playerUUID, action: inLineup?'remove':'add'});
+    await loadLineupForEvent(evId);
+    renderLineupPlayers(evId);
+    flashSaved();
+  }catch(e){alert(e.message);}
 }
 
 function generateTexts(){
@@ -844,20 +964,26 @@ function generateTexts(){
 /* ════════════════════════════════════════
    CARPOOL BOARD
 ════════════════════════════════════════ */
-function renderCarpoolBoard(context, targetEl){
+async function renderCarpoolBoard(context, targetEl){
   const selId=context==='coach'?'carpool-event-sel':null;
-  const evId=selId?parseInt(document.getElementById(selId).value):null;
+  const evId=selId?document.getElementById(selId).value:null;
   const el=targetEl||document.getElementById('carpool-board-coach');
   if(!evId||!el){if(el)el.innerHTML='';return;}
   const ev=events.find(e=>e.id===evId);
   if(!ev){el.innerHTML='';return;}
 
-  const board=carpool[evId]||[];
-  // Coach entry is always first
-  const coachEntry={name:'Coach',phone:'coach',seats:3,need:false,role:'coach'};
+  // Load from API
+  let board=[];
+  try{ board = await GET('/carpool?event_id='+evId); }catch(e){}
 
-  const offerers=[coachEntry,...board.filter(e=>e.seats>0&&!e.need)];
-  const needers=board.filter(e=>e.need);
+  // Coach entry: check if one exists, else show default 3 seats
+  const coachOffer = board.find(o=>o.is_coach);
+  const coachEntry = coachOffer
+    ? {...coachOffer, name:'Coach', riders: coachOffer.carpool_riders||[]}
+    : {id:'coach-default',name:'Coach',seats_total:3,carpool_riders:[],is_coach:true};
+
+  const offerers=[coachEntry,...board.filter(e=>!e.is_coach&&e.seats_total>0)];
+  const needers=board.filter(e=>e.needs_ride);
 
   let html=`<div class="card" style="background:#fdf9f0;border-color:#e8d8a0;margin-bottom:12px">
     <div class="ct" style="color:#7a5c0a">Coach has 3 seats available</div>
@@ -866,12 +992,14 @@ function renderCarpoolBoard(context, targetEl){
 
   html+=`<div class="divider">Seats available</div>`;
   offerers.forEach(e=>{
-    const taken=board.filter(r=>r.ridesWith===e.phone).length;
-    const open=e.seats-taken;
+    const riders = e.carpool_riders||[];
+    const taken = riders.length;
+    const seats = e.seats_total||e.seats||3;
+    const open = seats - taken;
     html+=`<div class="carpool-card">
       <div style="display:flex;align-items:center;justify-content:space-between">
-        <div><div class="carpool-name">${e.name}</div><div class="carpool-seats">Offering ${e.seats} seats <span class="seat-pill ${open>0?'seat-open':'seat-full'}">${open} open</span></div></div>
-        ${context!=='coach'&&open>0?`<button onclick="claimRide(${evId},'${e.phone}')" style="padding:7px 13px;background:var(--forest);color:#fff;border:none;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer">Claim seat</button>`:''}
+        <div><div class="carpool-name">${e.name}</div><div class="carpool-seats">Offering ${seats} seats <span class="seat-pill ${open>0?'seat-open':'seat-full'}">${open} open</span></div></div>
+        ${context!=='coach'&&open>0?`<button onclick="claimRide('${evId}','${e.id}')" style="padding:7px 13px;background:var(--forest);color:#fff;border:none;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer">Claim seat</button>`:''}
       </div>
     </div>`;
   });
@@ -880,8 +1008,8 @@ function renderCarpoolBoard(context, targetEl){
     html+=`<div class="divider">Need a ride</div>`;
     needers.forEach(e=>{
       html+=`<div class="carpool-card">
-        <div class="carpool-name">${e.name}</div>
-        <div class="carpool-seats" style="color:var(--red)">Needs a ride${e.ridesWith?' → riding with '+e.ridesWith:''}</div>
+        <div class="carpool-name">${e.rider_name||e.name||'Rider'}</div>
+        <div class="carpool-seats" style="color:var(--red)">Needs a ride</div>
       </div>`;
     });
   }
@@ -900,51 +1028,165 @@ function renderCarpoolBoard(context, targetEl){
   el.innerHTML=html;
 }
 
-function addCarpoolOffer(evId){
+async function addCarpoolOffer(evId){
   const name=document.getElementById('cp-name-'+evId)?.value.trim();
   const seats=parseInt(document.getElementById('cp-seats-'+evId)?.value)||0;
   if(!name||!seats)return;
-  if(!carpool[evId])carpool[evId]=[];
-  carpool[evId].push({name,phone:'parent_'+Date.now(),seats,need:false});
-  document.getElementById('cp-name-'+evId).value='';
-  document.getElementById('cp-seats-'+evId).value='';
-  persist();renderCarpoolBoard('coach');
+  try{
+    await POST('/carpool/offer',{event_id:evId,driver_name:name,seats_total:seats});
+    document.getElementById('cp-name-'+evId).value='';
+    document.getElementById('cp-seats-'+evId).value='';
+    renderCarpoolBoard('coach');
+    flashSaved();
+  }catch(e){alert(e.message);}
 }
 
-function claimRide(evId,driverPhone){
-  if(!activeParentPhone&&!activePlayerId){alert('Please sign in first.');return;}
-  const name=activeParentPhone?formatPhone(activeParentPhone):(()=>{const p=roster.find(x=>x.id===activePlayerId);return p?p.first+' '+p.last:'Player';})();
-  if(!carpool[evId])carpool[evId]=[];
-  // Remove existing need entry for this person
-  carpool[evId]=carpool[evId].filter(e=>e.phone!==(activeParentPhone||'p_'+activePlayerId));
-  carpool[evId].push({name,phone:activeParentPhone||'p_'+activePlayerId,seats:0,need:true,ridesWith:driverPhone});
-  persist();
+async function claimRide(evId, offerId){
+  if(!currentSession){alert('Please sign in first.');return;}
+  const player = activePlayerId ? roster.find(x=>x.id===activePlayerId) : null;
+  const name = player ? player.first+' '+player.last : (activeParentPhone ? formatPhone(activeParentPhone) : 'Rider');
+  try{
+    await POST('/carpool/claim',{
+      offer_id: offerId==='coach-default' ? null : offerId,
+      rider_name: name,
+      rider_phone: activeParentPhone||null,
+      player_id: player?.uuid||null,
+      event_id: evId
+    });
+    renderPlayerHome();
+  }catch(e){alert(e.message);}
 }
+
 
 /* ════════════════════════════════════════
-   PLAYER HOME
+   PARENT HOME — API wired
 ════════════════════════════════════════ */
-function renderPlayerHome(){
+async function renderParentHome(){
+  const phone=activeParentPhone;
+  const myPlayers=roster.length ? roster.filter(p=>p.parents&&p.parents.some(par=>par.phone===phone)) : [];
+  
+  if(!roster.length) await loadRoster();
+  if(!events.length) await loadEvents();
+
+  const parEl=document.getElementById('par-player-display');
+  if(myPlayers.length){
+    parEl.innerHTML=myPlayers.map(p=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0">
+        <div style="width:32px;height:32px;border-radius:50%;background:${COLORS[(p.id-1)%16]};color:${TCS[(p.id-1)%16]};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600">${ini(p)}</div>
+        <div><div style="font-size:13px;font-weight:500">${p.first} ${p.last}</div><div style="font-size:11px;color:var(--muted)">${p.squad==='v'?'Varsity':'JV'} · ${p.year}</div></div>
+      </div>`).join('');
+  } else {
+    parEl.innerHTML='<div style="font-size:12px;color:var(--muted);line-height:1.6">Your number isn't linked to a player yet. Ask your son to add your number under Player → Parent contact.</div>';
+  }
+
+  const now=new Date().toISOString().split('T')[0];
+  const upcoming=events.filter(e=>e.date>=now).sort((a,b)=>a.date.localeCompare(b.date));
+  const evEl=document.getElementById('par-events-list');
+  if(!upcoming.length){evEl.innerHTML='<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">No upcoming events yet.</div>';return;}
+
+  // Load signups for all upcoming events
+  let allSignups = {};
+  try{
+    for(const ev of upcoming){
+      const sigs = await GET('/signups?event_id='+ev.id);
+      allSignups[ev.id] = sigs;
+    }
+  }catch(e){}
+
+  evEl.innerHTML=upcoming.map(ev=>{
+    const mySig = (allSignups[ev.id]||[]).find(s=>s.user_id===currentSession?.id)||{attending:false,bring:''};
+    return `<div class="event-card">
+      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">
+        ${evTypeChip(ev.type)}
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:500">${ev.name}</div>
+          <div style="font-size:11px;color:var(--muted)">${fmtDate(ev.date)}${ev.time?' · '+ev.time:''}</div>
+          ${ev.loc?`<div style="font-size:11px;color:var(--muted)">${ev.loc}</div>`:''}
+        </div>
+      </div>
+      <div class="ct">Will you attend?</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <button class="attend-btn ${mySig.attending?'yes':''}" onclick="setAttend('${ev.id}','${phone}',true,this)">${mySig.attending?'✓ Attending':'Yes, I'll be there'}</button>
+        <button class="attend-btn" onclick="setAttend('${ev.id}','${phone}',false,this)">Can't make it</button>
+      </div>
+      ${mySig.attending?`
+        <div class="ct">Offering to bring anything?</div>
+        <input class="bring-input" type="text" value="${mySig.bring||''}" placeholder="e.g. waters, snacks, extra hats…"
+          onchange="setBring('${ev.id}','${phone}',this.value)">
+      `:''}
+      <div class="ct" style="margin-top:10px">Carpool</div>
+      ${renderParentCarpoolBlock(ev.id,phone)}
+    </div>`;
+  }).join('');
+}
+
+
+/* ════════════════════════════════════════
+   INIT
+════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', async ()=>{
+  // Set today's date on event form
+  const today=new Date().toISOString().split('T')[0];
+  const dateEl=document.getElementById('ev-date');
+  if(dateEl)dateEl.value=today;
+
+  // Restore session if token exists
+  const token = getToken();
+  if(token){
+    try{
+      const r = await GET('/auth/me');
+      if(r.ok){
+        currentSession = r.user;
+        if(r.user.role==='coach'){
+          await enterCoach();
+          return;
+        }
+        if(r.user.role==='player'){
+          activePlayerId = r.user.legacyId;
+          activePlayerUUID = r.user.playerId;
+          await loadRoster();
+          await loadEvents();
+          const p = roster.find(x=>x.id===activePlayerId);
+          if(p) document.getElementById('p-tb-name').textContent=p.first;
+          showScreen('screen-player');
+          renderPlayerHome();
+          return;
+        }
+      }
+    }catch(e){ clearToken(); }
+  }
+});
+
+/* ════════════════════════════════════════
+   PLAYER HOME — API wired
+════════════════════════════════════════ */
+async function renderPlayerHome(){
   const p=roster.find(x=>x.id===activePlayerId);if(!p)return;
   document.getElementById('p-hero-name').textContent=p.first+' '+p.last;
   document.getElementById('p-hero-sub').textContent=`${p.squad==='v'?'Varsity':'JV'} · Class of ${p.year==='Fr'?'2028':p.year==='So'?'2027':p.year==='Jr'?'2026':'2025'}`;
   document.getElementById('p-squad').textContent=p.squad==='v'?'V':'JV';
   document.getElementById('p-avg').textContent=p.tryAvg||'–';
-  const rank=roster.filter(x=>x.tryAvg!==null).sort((a,b)=>a.tryAvg-b.tryAvg).findIndex(x=>x.id===p.id)+1;
+  const sorted=roster.filter(x=>x.tryAvg!==null).sort((a,b)=>a.tryAvg-b.tryAvg);
+  const rank=sorted.findIndex(x=>x.id===p.id)+1;
   document.getElementById('p-rank').textContent=rank>0?('#'+rank):'–';
-
-  // Parent slots
   renderPlayerParentSlots(p);
 
-  // Next event
   const now=new Date().toISOString().split('T')[0];
   const next=events.filter(e=>e.date>=now).sort((a,b)=>a.date.localeCompare(b.date))[0];
   const nextEl=document.getElementById('p-next-event');
   if(!next){nextEl.innerHTML='<div class="card"><div class="ct">Next event</div><div style="font-size:12px;color:var(--muted)">No upcoming events. Check back soon.</div></div>';return;}
 
-  const inLineup=lineups[next.id]&&lineups[next.id].includes(p.id);
-  const rsvpKey=`${next.id}_${p.id}`;
-  const myRsvp=rsvps[rsvpKey]||'';
+  // Load lineup for next event
+  await loadLineupForEvent(next.id);
+  const inLineup=(lineups[next.id]||[]).includes(p.uuid);
+
+  // Load my RSVP
+  let myStatus='';
+  try{
+    const rsvpData = await GET('/rsvps?event_id='+next.id);
+    const mine = rsvpData.find(r=>r.player_id===p.uuid);
+    if(mine) myStatus = mine.status;
+  }catch(e){}
 
   nextEl.innerHTML=`<div class="card">
     <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:10px">
@@ -958,222 +1200,19 @@ function renderPlayerHome(){
       <div style="background:var(--greenb);border-radius:9px;padding:10px 12px;margin-bottom:10px;font-size:12px;color:var(--green);font-weight:500">✓ You're in the lineup for this event</div>
       <div class="ct">Confirm your status</div>
       <div class="rsvp-row">
-        <button class="rsvp-btn ${myRsvp==='yes'?'selected':''}" onclick="setRsvp('${next.id}',${p.id},'yes',this.closest('.rsvp-row'))">I'll be there ✓</button>
-        <button class="rsvp-btn need-ride ${myRsvp==='ride'?'selected':''}" onclick="setRsvp('${next.id}',${p.id},'ride',this.closest('.rsvp-row'))">I'll be there + need ride 🚗</button>
+        <button class="rsvp-btn ${myStatus==='yes'?'selected':''}" onclick="setRsvp('${next.id}',${p.id},'yes',this.closest('.rsvp-row'))">I'll be there ✓</button>
+        <button class="rsvp-btn need-ride ${myStatus==='ride'?'selected':''}" onclick="setRsvp('${next.id}',${p.id},'ride',this.closest('.rsvp-row'))">I'll be there + need ride 🚗</button>
       </div>
-      ${myRsvp?`<div style="font-size:11px;color:var(--fern);text-align:center;margin-top:4px">Response saved ✓</div>`:''}
+      ${myStatus?`<div style="font-size:11px;color:var(--fern);text-align:center;margin-top:4px">Response saved ✓</div>`:''}
     `:`<div style="background:var(--surf);border-radius:9px;padding:10px 12px;font-size:12px;color:var(--muted)">Not in the lineup for this event. Keep working.</div>`}
   </div>`;
 
-  // Carpool
   const cpEl=document.getElementById('p-carpool-section');
   if(inLineup){
     cpEl.innerHTML=`<div class="page-title" style="margin-bottom:4px">Carpool</div><div class="page-sub">Coach has 3 seats · claim one if you need a ride</div><div id="p-cp-board"></div>`;
-    renderCarpoolBoard('player',document.getElementById('p-cp-board'));
-    // Inject event id for claimRide
-    document.querySelectorAll('#p-cp-board [onclick]').forEach(btn=>{
-      const orig=btn.getAttribute('onclick');
-      if(orig&&orig.includes('claimRide'))btn.setAttribute('onclick',orig.replace('claimRide(','claimRide('+next.id+',').replace('claimRide('+next.id+',claimRide','claimRide'));
-    });
-    // Fix: re-render with correct evId
-    const boardEl=document.getElementById('p-cp-board');
-    if(boardEl) renderCarpoolBoard_withId(next.id,'player',boardEl);
-  } else {
-    cpEl.innerHTML='';
-  }
+    await renderCarpoolBoard('player',document.getElementById('p-cp-board'));
+  } else { cpEl.innerHTML=''; }
 }
-
-function renderCarpoolBoard_withId(evId,context,el){
-  const board=carpool[evId]||[];
-  const coachEntry={name:'Coach',phone:'coach',seats:3,need:false,role:'coach'};
-  const offerers=[coachEntry,...board.filter(e=>e.seats>0&&!e.need)];
-  const needers=board.filter(e=>e.need);
-  let html=`<div class="divider">Seats available</div>`;
-  offerers.forEach(e=>{
-    const taken=board.filter(r=>r.ridesWith===e.phone).length;
-    const open=e.seats-taken;
-    html+=`<div class="carpool-card">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div><div class="carpool-name">${e.name}</div><div class="carpool-seats">Offering ${e.seats} <span class="seat-pill ${open>0?'seat-open':'seat-full'}">${open} open</span></div></div>
-        ${open>0?`<button onclick="claimRide(${evId},'${e.phone}');renderPlayerHome()" style="padding:7px 13px;background:var(--forest);color:#fff;border:none;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer">Claim</button>`:''}
-      </div>
-    </div>`;
-  });
-  if(needers.length){html+=`<div class="divider">Also need rides</div>`;needers.forEach(e=>{html+=`<div class="carpool-card"><div class="carpool-name">${e.name}</div><div class="carpool-seats" style="color:var(--red)">Needs a ride</div></div>`;});}
-  el.innerHTML=html;
-}
-
-function setRsvp(evId,pid,status,rowEl){
-  const key=`${evId}_${pid}`;
-  rsvps[key]=status;
-  if(status==='ride'){
-    const p=roster.find(x=>x.id===pid);
-    if(!carpool[evId])carpool[evId]=[];
-    carpool[evId]=carpool[evId].filter(e=>e.phone!=='p_'+pid);
-    carpool[evId].push({name:p?p.first+' '+p.last:'Player',phone:'p_'+pid,seats:0,need:true});
-  }
-  persist();renderPlayerHome();
-}
-
-/* Player parent slots */
-let parentSlotCount=1;
-function renderPlayerParentSlots(p){
-  const el=document.getElementById('p-parent-slots');
-  if(!p.parents||!p.parents.length){
-    el.innerHTML=parentSlotHTML(p.id,0);
-    return;
-  }
-  el.innerHTML=p.parents.map((par,i)=>`
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--greenb);border-radius:8px;margin-bottom:6px">
-      <div style="flex:1"><div style="font-size:12px;font-weight:500">${par.name}</div><div style="font-size:11px;color:var(--fern)">${formatPhone(par.phone)}</div></div>
-      <button onclick="removePlayerParent(${p.id},${i})" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted)">×</button>
-    </div>`).join('')+parentSlotHTML(p.id, p.parents.length);
-}
-function parentSlotHTML(pid, idx){
-  return `<div id="pslot-${pid}">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
-      <input type="text" id="slot-name-${pid}" placeholder="Parent name">
-      <input type="tel" id="slot-tel-${pid}" placeholder="Cell number">
-    </div>
-    <button onclick="savePlayerParent(${pid})" style="width:100%;padding:9px;background:var(--fern);color:#fff;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer">Save contact</button>
-  </div>`;
-}
-function savePlayerParent(pid){
-  const p=roster.find(x=>x.id===pid);if(!p)return;
-  const name=document.getElementById('slot-name-'+pid)?.value.trim();
-  const phone=(document.getElementById('slot-tel-'+pid)?.value||'').replace(/\D/g,'');
-  if(!phone||phone.length<10){alert('Please enter a valid 10-digit number.');return;}
-  if(!p.parents)p.parents=[];
-  p.parents.push({name:name||'Parent',phone});
-  persist();renderPlayerParentSlots(p);
-}
-function removePlayerParent(pid,idx){const p=roster.find(x=>x.id===pid);if(!p)return;p.parents.splice(idx,1);persist();renderPlayerParentSlots(p);}
-function addParentSlot(){renderPlayerParentSlots(roster.find(p=>p.id===activePlayerId));}
-
-/* ════════════════════════════════════════
-   PARENT HOME
-════════════════════════════════════════ */
-function renderParentHome(){
-  const phone=activeParentPhone;
-  // Find which player(s) this parent belongs to
-  const myPlayers=roster.filter(p=>p.parents&&p.parents.some(par=>par.phone===phone));
-  const parEl=document.getElementById('par-player-display');
-  if(myPlayers.length){
-    parEl.innerHTML=myPlayers.map(p=>`
-      <div style="display:flex;align-items:center;gap:10px;padding:8px 0">
-        <div style="width:32px;height:32px;border-radius:50%;background:${COLORS[p.id-1]};color:${TCS[p.id-1]};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600">${ini(p)}</div>
-        <div><div style="font-size:13px;font-weight:500">${p.first} ${p.last}</div><div style="font-size:11px;color:var(--muted)">${p.squad==='v'?'Varsity':'JV'} · ${p.year}</div></div>
-      </div>`).join('');
-  } else {
-    parEl.innerHTML='<div style="font-size:12px;color:var(--muted);line-height:1.6">Your number isn\'t linked to a player yet. Ask your son to add your number in the app under Player → Parent contact.</div>';
-  }
-
-  // Events
-  const now=new Date().toISOString().split('T')[0];
-  const upcoming=events.filter(e=>e.date>=now).sort((a,b)=>a.date.localeCompare(b.date));
-  const evEl=document.getElementById('par-events-list');
-  if(!upcoming.length){evEl.innerHTML='<div style="text-align:center;padding:24px;color:var(--muted);font-size:12px">No upcoming events yet.</div>';return;}
-
-  evEl.innerHTML=upcoming.map(ev=>{
-    const sigKey=`${ev.id}_${phone}`;
-    const sig=parentSignups[sigKey]||{attending:false,bring:''};
-    const evCp=carpool[ev.id]||[];
-    const myRide=evCp.find(e=>e.phone===phone);
-
-    return `<div class="event-card">
-      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">
-        ${evTypeChip(ev.type)}
-        <div style="flex:1">
-          <div style="font-size:14px;font-weight:500">${ev.name}</div>
-          <div style="font-size:11px;color:var(--muted)">${fmtDate(ev.date)}${ev.time?' · '+ev.time:''}</div>
-          ${ev.loc?`<div style="font-size:11px;color:var(--muted)">${ev.loc}</div>`:''}
-        </div>
-      </div>
-      <div class="ct">Will you attend?</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-        <button class="attend-btn ${sig.attending?'yes':''}" onclick="setAttend('${ev.id}','${phone}',true,this)">${sig.attending?'✓ Attending':'Yes, I\'ll be there'}</button>
-        <button class="attend-btn ${!sig.attending&&sig.attending!==undefined&&sig.attending===false?'yes':''}" onclick="setAttend('${ev.id}','${phone}',false,this)">Can\'t make it</button>
-      </div>
-      ${sig.attending?`
-        <div class="ct">Offering to bring anything?</div>
-        <input class="bring-input" type="text" value="${sig.bring||''}" placeholder="e.g. waters, snacks, extra hats…"
-          onchange="setBring('${ev.id}','${phone}',this.value)">
-      `:''}
-      <div class="ct" style="margin-top:10px">Carpool</div>
-      ${renderParentCarpoolBlock(ev.id,phone)}
-    </div>`;
-  }).join('');
-}
-
-function renderParentCarpoolBlock(evId,phone){
-  const board=carpool[evId]||[];
-  const myEntry=board.find(e=>e.phone===phone);
-  const coachSeats=3-board.filter(e=>e.ridesWith==='coach').length;
-
-  let html='';
-  if(myEntry){
-    if(myEntry.seats>0)html=`<div style="font-size:12px;color:var(--green);margin-bottom:6px">✓ You're offering ${myEntry.seats} seats</div>`;
-    if(myEntry.need)html=`<div style="font-size:12px;color:var(--blue);margin-bottom:6px">${myEntry.ridesWith?'✓ Ride arranged':'You\'ve requested a ride'}</div>`;
-  }
-
-  html+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-    <button onclick="showParentCarpoolOffer(${evId},'${phone}')" style="padding:9px;border:.5px solid var(--border);border-radius:8px;background:none;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;color:var(--ink);cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--fern)'" onmouseout="this.style.borderColor='var(--border)'">Offer seats 🚗</button>
-    <button onclick="requestRideParent(${evId},'${phone}')" style="padding:9px;border:.5px solid var(--border);border-radius:8px;background:none;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;color:var(--ink);cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'">Need a ride</button>
-  </div>
-  <div id="par-cp-form-${evId}" style="display:none;margin-top:8px">
-    <input type="text" id="par-cp-name-${evId}-${phone.slice(-4)}" placeholder="Your name" style="margin-bottom:6px">
-    <div style="display:flex;gap:8px">
-      <input type="number" id="par-cp-seats-${evId}-${phone.slice(-4)}" placeholder="Seats" min="1" max="7" style="flex:1">
-      <button onclick="saveParentCarpoolOffer(${evId},'${phone}')" style="padding:9px 14px;background:var(--forest);color:#fff;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer">Save</button>
-    </div>
-  </div>`;
-  return html;
-}
-
-function showParentCarpoolOffer(evId,phone){
-  document.getElementById('par-cp-form-'+evId).style.display='block';
-}
-function saveParentCarpoolOffer(evId,phone){
-  const sfx=phone.slice(-4);
-  const name=document.getElementById('par-cp-name-'+evId+'-'+sfx)?.value.trim();
-  const seats=parseInt(document.getElementById('par-cp-seats-'+evId+'-'+sfx)?.value)||0;
-  if(!name||!seats)return;
-  if(!carpool[evId])carpool[evId]=[];
-  carpool[evId]=carpool[evId].filter(e=>e.phone!==phone);
-  carpool[evId].push({name,phone,seats,need:false});
-  persist();renderParentHome();
-}
-function requestRideParent(evId,phone){
-  const myPlayers=roster.filter(p=>p.parents&&p.parents.some(par=>par.phone===phone));
-  const name=myPlayers.length?myPlayers[0].first+'\'s parent':formatPhone(phone);
-  if(!carpool[evId])carpool[evId]=[];
-  carpool[evId]=carpool[evId].filter(e=>e.phone!==phone);
-  carpool[evId].push({name,phone,seats:0,need:true});
-  persist();renderParentHome();
-}
-function setAttend(evId,phone,val,btn){
-  const key=`${evId}_${phone}`;
-  if(!parentSignups[key])parentSignups[key]={attending:false,bring:''};
-  parentSignups[key].attending=val;
-  persist();renderParentHome();
-}
-function setBring(evId,phone,val){
-  const key=`${evId}_${phone}`;
-  if(!parentSignups[key])parentSignups[key]={attending:true,bring:''};
-  parentSignups[key].bring=val;
-  persist();
-}
-
-/* ════════════════════════════════════════
-   INIT
-════════════════════════════════════════ */
-document.addEventListener('DOMContentLoaded',()=>{
-  hydrate();
-  // Set today's date on event form
-  const today=new Date().toISOString().split('T')[0];
-  const dateEl=document.getElementById('ev-date');
-  if(dateEl)dateEl.value=today;
-});
 </script>
 </body>
 </html>

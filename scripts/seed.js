@@ -8,13 +8,24 @@ const env = Object.fromEntries(envFile.split('\n').filter(l => l && !l.startsWit
 
 const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 
+// ┌──────────────────────────────────────────────────────────┐
+// │ LOOKUP KEY — Dev-only anonymized test data              │
+// │ legacy_id 1: Player Alpha  (V, Jr)  — Parent Alpha     │
+// │ legacy_id 2: Player Bravo  (V, Sr)  — Parent Bravo     │
+// │ legacy_id 3: Player Charlie (V, Jr)                     │
+// │ legacy_id 4: Player Delta  (V, So)                      │
+// │ legacy_id 5: Player Echo   (JV, Fr)                     │
+// │ legacy_id 6: Player Foxtrot (JV, Fr)                    │
+// │ Coach PIN: 1234                                         │
+// │ All phones: 317-555-01xx                                │
+// └──────────────────────────────────────────────────────────┘
 const PLAYERS = [
-  { legacy_id: 1, first: 'Jake', last: 'Mitchell', squad: 'v', year: 11, try_avg: 38.2, season: '2026' },
-  { legacy_id: 2, first: 'Ryan', last: 'Torres', squad: 'v', year: 12, try_avg: 36.5, season: '2026' },
-  { legacy_id: 3, first: 'Cole', last: 'Anderson', squad: 'v', year: 11, try_avg: 39.1, season: '2026' },
-  { legacy_id: 4, first: 'Luke', last: 'Barrett', squad: 'v', year: 10, try_avg: 41.0, season: '2026' },
-  { legacy_id: 5, first: 'Max', last: 'Chen', squad: 'jv', year: 9, try_avg: 44.3, season: '2026' },
-  { legacy_id: 6, first: 'Drew', last: 'Palmer', squad: 'jv', year: 9, try_avg: 46.7, season: '2026' },
+  { legacy_id: 1, first: 'Player', last: 'Alpha', squad: 'v', year: 11, try_avg: 38.2, season: '2026' },
+  { legacy_id: 2, first: 'Player', last: 'Bravo', squad: 'v', year: 12, try_avg: 36.5, season: '2026' },
+  { legacy_id: 3, first: 'Player', last: 'Charlie', squad: 'v', year: 11, try_avg: 39.1, season: '2026' },
+  { legacy_id: 4, first: 'Player', last: 'Delta', squad: 'v', year: 10, try_avg: 41.0, season: '2026' },
+  { legacy_id: 5, first: 'Player', last: 'Echo', squad: 'jv', year: 9, try_avg: 44.3, season: '2026' },
+  { legacy_id: 6, first: 'Player', last: 'Foxtrot', squad: 'jv', year: 9, try_avg: 46.7, season: '2026' },
 ];
 
 const EVENTS = [
@@ -24,8 +35,8 @@ const EVENTS = [
 ];
 
 const PARENTS = [
-  { playerLegacyId: 1, name: 'Sarah Mitchell', phone: '3175551234' },
-  { playerLegacyId: 2, name: 'Mike Torres', phone: '3175555678' },
+  { playerLegacyId: 1, name: 'Parent Alpha', phone: '3175550101' },
+  { playerLegacyId: 2, name: 'Parent Bravo', phone: '3175550102' },
 ];
 
 async function seed() {

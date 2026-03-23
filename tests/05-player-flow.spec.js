@@ -10,7 +10,7 @@ test.describe('Player Flow', () => {
       data: { role: 'coach', pin: '1234' }
     });
     const { token: coachToken } = await coachResp.json();
-    // Setup PIN for Jake Mitchell (legacy_id: 1)
+    // Setup PIN for Alpha Mitchell (legacy_id: 1)
     const setupResp = await page.request.post('/api/auth/setup', {
       data: { role: 'player', identifier: '1', pin: '5678' },
       headers: { Authorization: `Bearer ${coachToken}` }
@@ -24,7 +24,7 @@ test.describe('Player Flow', () => {
     const loginBody = await loginResp.json();
     expect(loginBody.ok).toBe(true);
     expect(loginBody.user.role).toBe('player');
-    expect(loginBody.user.name).toContain('Jake');
+    expect(loginBody.user.name).toContain('Alpha');
     expect(errors.filter(e => !e.includes('favicon'))).toHaveLength(0);
   });
 

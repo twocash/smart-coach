@@ -31,7 +31,7 @@ test.describe('Swing Note (AI)', () => {
     const { token: playerToken } = await playerResp.json();
     // Try swing note as player
     const noteResp = await page.request.post('/api/swing-note', {
-      data: { playerProfile: { name: 'Ryan Torres' }, lessonFocus: 'grip' },
+      data: { playerProfile: { name: 'Player Bravo' }, lessonFocus: 'grip' },
       headers: { Authorization: `Bearer ${playerToken}` }
     });
     expect(noteResp.status()).toBe(403);
@@ -45,7 +45,7 @@ test.describe('Swing Note (AI)', () => {
     const { token } = await coachResp.json();
     const noteResp = await page.request.post('/api/swing-note', {
       data: {
-        playerProfile: { name: 'Jake Mitchell', squad: 'v', try_avg: 38.2 },
+        playerProfile: { name: 'Player Alpha', squad: 'v', try_avg: 38.2 },
         lessonFocus: 'putting consistency'
       },
       headers: { Authorization: `Bearer ${token}` }

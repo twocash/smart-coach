@@ -13,12 +13,12 @@ test.describe('Roster Management', () => {
   test('displays seeded players', async ({ page }) => {
     const errors = captureErrors(page);
     const body = await page.textContent('body');
-    expect(body).toContain('Jake');
-    expect(body).toContain('Ryan');
-    expect(body).toContain('Cole');
-    expect(body).toContain('Luke');
-    expect(body).toContain('Max');
-    expect(body).toContain('Drew');
+    expect(body).toContain('Alpha');
+    expect(body).toContain('Bravo');
+    expect(body).toContain('Charlie');
+    expect(body).toContain('Delta');
+    expect(body).toContain('Echo');
+    expect(body).toContain('Foxtrot');
     expect(errors.filter(e => !e.includes('favicon'))).toHaveLength(0);
   });
 
@@ -47,8 +47,8 @@ test.describe('Roster Management', () => {
       headers: { Authorization: `Bearer ${token}` }
     });
     const players = await resp.json();
-    const jake = players.find(p => p.first === 'Jake');
+    const jake = players.find(p => p.last === 'Alpha');
     expect(jake.parents).toHaveLength(1);
-    expect(jake.parents[0].name).toBe('Sarah Mitchell');
+    expect(jake.parents[0].name).toBe('Parent Alpha');
   });
 });

@@ -1,6 +1,7 @@
 // api/events.js
 import supabase from '../lib/db.js';
 import { verify } from '../lib/jwt.js';
+import { CURRENT_SEASON } from '../lib/config.js';
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
@@ -12,7 +13,7 @@ export default async function handler(req, res) {
   const url = new URL(req.url, 'http://localhost');
   const eventId = url.searchParams.get('id');
   if (req.method === 'GET') {
-    const { data, error } = await supabase.from('events').select('*').eq('season', '2026').order('date');
+    const { data, error } = await supabase.from('events').select('*').eq('season', CURRENT_SEASON).order('date');
     if (error) return res.status(500).json({ error: error.message });
     return res.status(200).json(data);
   }
@@ -20,7 +21,7 @@ export default async function handler(req, res) {
     if (session.role !== 'coach') return res.status(403).json({ error: 'Coach only' });
     const { type, name, location, date, tee_time } = req.body || {};
     if (!name || !date) return res.status(400).json({ error: 'name and date required' });
-    const { data, error } = await supabase.from('events').insert({ type: type || 'match', name, location, date, tee_time, season: '2026' }).select().single();
+    const { data, error } = await supabase.from('events').insert({ type: type || 'match', name, location, date, tee_time, season: CURRENT_SEASON }).select().single();
     if (error) return res.status(500).json({ error: error.message });
     return res.status(201).json({ ok: true, event: data });
   }

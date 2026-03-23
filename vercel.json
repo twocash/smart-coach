@@ -4,8 +4,13 @@
     { "src": "api/**/*.js", "use": "@vercel/node" },
     { "src": "public/**", "use": "@vercel/static" }
   ],
-  "routes": [
-    { "src": "/api/(.*)", "dest": "/api/$1" },
-    { "src": "/(.*)", "dest": "/public/$1" }
+  "rewrites": [
+    { "source": "/api/auth/setup", "destination": "/api/auth/setup.js" },
+    { "source": "/api/auth/me", "destination": "/api/auth/me.js" },
+    { "source": "/api/players/parents", "destination": "/api/players/parents.js" },
+    { "source": "/api/carpool/offer", "destination": "/api/carpool/offer.js" },
+    { "source": "/api/carpool/claim", "destination": "/api/carpool/claim.js" },
+    { "source": "/api/:path*", "destination": "/api/:path*.js" },
+    { "source": "/:path*", "destination": "/public/:path*" }
   ]
 }

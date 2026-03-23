@@ -2,7 +2,16 @@
   "name": "smart-coach",
   "version": "1.0.0",
   "type": "module",
+  "scripts": {
+    "dev": "vercel dev --listen 3000",
+    "seed": "node scripts/seed.js",
+    "test": "npx playwright test",
+    "test:headed": "npx playwright test --headed"
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2"
   }
 }

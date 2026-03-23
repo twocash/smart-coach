@@ -529,6 +529,7 @@ let roster  = [];
 let events  = [];
 let lineups = {};
 let rsvps   = {};
+let parentCarpoolData = {};
 
 /* ════════════════════════════════════════
    HELPERS
@@ -627,6 +628,24 @@ async function handlePin(){
       pinBuf='';updateDots();
       showScreen('screen-player');
       renderPlayerHome();
+    }catch(e){
+      document.getElementById('pin-err').textContent=e.message;
+      for(let i=0;i<4;i++)document.getElementById('pd'+i).classList.add('error');
+      setTimeout(()=>{pinBuf='';updateDots();document.getElementById('pin-err').textContent='';},900);
+    }
+    return;
+  }
+  if(pinMode==='enter-parent'){
+    try{
+      const r = await POST('/auth',{role:'parent',pin:pinBuf,identifier:activeParentPhone});
+      setToken(r.token);
+      currentSession=r.user;
+      pinBuf='';updateDots();
+      await loadRoster();
+      await loadEvents();
+      document.getElementById('par-tb-phone').textContent=formatPhone(activeParentPhone);
+      showScreen('screen-parent');
+      renderParentHome();
     }catch(e){
       document.getElementById('pin-err').textContent=e.message;
       for(let i=0;i<4;i++)document.getElementById('pd'+i).classList.add('error');
@@ -763,7 +782,7 @@ function playerCard(p,i){
     ?p.parents.map((par,pi)=>`
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
         <div style="flex:1;font-size:12px;color:var(--ink)">${par.name||'Parent '+( pi+1)} · <span style="color:var(--fern)">${formatPhone(par.phone)}</span></div>
-        <button onclick="removeParent(${p.id},${pi});event.stopPropagation()" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted)">×</button>
+        <button onclick="removeParent(${p.id},'${par.id}');event.stopPropagation()" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--muted)">×</button>
       </div>`).join('')
     :'';
   return `<div class="p-card ${p.squad}" id="pcard-${p.id}" onclick="toggleCard(${p.id})">
@@ -1082,7 +1101,9 @@ async function claimRide(evId, offerId){
       player_id: player?.uuid||null,
       event_id: evId
     });
-    renderPlayerHome();
+    if(currentSession?.role==='parent') await renderParentHome();
+    else await renderPlayerHome();
+    flashSaved();
   }catch(e){alert(e.message);}
 }
 
@@ -1119,6 +1140,14 @@ async function renderParentHome(){
     for(const ev of upcoming){
       const sigs = await GET('/signups?event_id='+ev.id);
       allSignups[ev.id] = sigs;
+    }
+  }catch(e){}
+
+  // Pre-load carpool for all upcoming events
+  try{
+    for(const ev of upcoming){
+      const cp = await GET('/carpool?event_id='+ev.id);
+      parentCarpoolData[ev.id] = cp;
     }
   }catch(e){}
 
@@ -1244,6 +1273,15 @@ document.addEventListener('DOMContentLoaded', async ()=>{
           renderPlayerHome();
           return;
         }
+        if(r.user.role==='parent'){
+          activeParentPhone = r.user.phone;
+          await loadRoster();
+          await loadEvents();
+          document.getElementById('par-tb-phone').textContent=formatPhone(activeParentPhone);
+          showScreen('screen-parent');
+          renderParentHome();
+          return;
+        }
       }
     }catch(e){ clearToken(); }
   }
@@ -1304,6 +1342,110 @@ async function renderPlayerHome(){
     cpEl.innerHTML=`<div class="page-title" style="margin-bottom:4px">Carpool</div><div class="page-sub">Coach has 3 seats · claim one if you need a ride</div><div id="p-cp-board"></div>`;
     await renderCarpoolBoard('player',document.getElementById('p-cp-board'));
   } else { cpEl.innerHTML=''; }
+}
+
+/* ════════════════════════════════════════
+   PLAYER — PARENT SLOTS
+════════════════════════════════════════ */
+function renderPlayerParentSlots(p){
+  const el=document.getElementById('p-parent-slots');
+  if(!el)return;
+  let html='';
+  if(p.parents&&p.parents.length){
+    html+=p.parents.map(par=>`
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;padding:8px 10px;background:var(--greenb);border-radius:8px">
+        <div style="flex:1"><div style="font-size:12px;font-weight:500;color:var(--green)">${par.name||'Parent'}</div><div style="font-size:11px;color:var(--muted)">${formatPhone(par.phone)}</div></div>
+        <span style="font-size:10px;color:var(--green)">✓ Linked</span>
+      </div>`).join('');
+  }
+  html+=`<div class="parent-entry-row">
+    <input type="text" id="pp-name" placeholder="Parent name">
+    <input type="tel" id="pp-phone" placeholder="Cell number">
+  </div>
+  <button class="primary-btn" onclick="savePlayerParent()">Save parent contact</button>`;
+  el.innerHTML=html;
+}
+
+function addParentSlot(){
+  const phoneInput=document.getElementById('pp-phone');
+  if(phoneInput){phoneInput.focus();phoneInput.scrollIntoView({behavior:'smooth',block:'center'});}
+}
+
+async function savePlayerParent(){
+  const p=roster.find(x=>x.id===activePlayerId);if(!p)return;
+  const name=document.getElementById('pp-name')?.value.trim()||'';
+  const phone=(document.getElementById('pp-phone')?.value||'').replace(/\D/g,'');
+  if(!phone||phone.length<10){alert('Please enter a valid 10-digit number.');return;}
+  try{
+    await POST('/players/parents',{player_id:p.uuid,name:name||'Parent',phone});
+    await loadRoster();
+    const updated=roster.find(x=>x.id===activePlayerId);
+    if(updated)renderPlayerParentSlots(updated);
+    flashSaved();
+  }catch(e){alert(e.message);}
+}
+
+/* ════════════════════════════════════════
+   PLAYER — RSVP
+════════════════════════════════════════ */
+async function setRsvp(eventId, legacyId, status, rowEl){
+  const p=roster.find(x=>x.id===legacyId);if(!p)return;
+  try{
+    await POST('/rsvps',{event_id:eventId, player_id:p.uuid, status});
+    if(rowEl){
+      rowEl.querySelectorAll('.rsvp-btn').forEach(b=>b.classList.remove('selected'));
+      const idx=status==='yes'?0:1;
+      if(rowEl.children[idx])rowEl.children[idx].classList.add('selected');
+    }
+    let confirm=rowEl?.parentElement?.querySelector('.rsvp-confirm-msg');
+    if(!confirm){
+      confirm=document.createElement('div');
+      confirm.className='rsvp-confirm-msg';
+      confirm.style.cssText='font-size:11px;color:var(--fern);text-align:center;margin-top:4px';
+      rowEl?.parentElement?.appendChild(confirm);
+    }
+    confirm.textContent='Response saved ✓';
+    flashSaved();
+  }catch(e){alert(e.message);}
+}
+
+/* ════════════════════════════════════════
+   PARENT — ATTEND + BRING + CARPOOL
+════════════════════════════════════════ */
+async function setAttend(eventId, phone, attending, btnEl){
+  try{
+    await POST('/signups',{event_id:eventId, attending, bring:''});
+    await renderParentHome();
+    flashSaved();
+  }catch(e){alert(e.message);}
+}
+
+async function setBring(eventId, phone, value){
+  try{
+    await POST('/signups',{event_id:eventId, attending:true, bring:value});
+    flashSaved();
+  }catch(e){alert(e.message);}
+}
+
+function renderParentCarpoolBlock(eventId, phone){
+  const board=parentCarpoolData[eventId]||[];
+  if(!board.length) return '<div style="font-size:12px;color:var(--muted)">No carpool offers yet. Check back closer to the event.</div>';
+  const coachOffer=board.find(o=>o.is_coach);
+  const coachEntry=coachOffer?{...coachOffer,name:'Coach',carpool_riders:coachOffer.carpool_riders||[]}:null;
+  const offerers=[...(coachEntry?[coachEntry]:[]),...board.filter(e=>!e.is_coach&&e.seats_total>0)];
+  if(!offerers.length) return '<div style="font-size:12px;color:var(--muted)">No carpool offers yet.</div>';
+  return offerers.map(e=>{
+    const riders=e.carpool_riders||[];
+    const seats=e.seats_total||3;
+    const open=seats-riders.length;
+    return `<div class="carpool-card" style="margin-bottom:6px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div><div class="carpool-name">${e.name||e.driver_name||'Driver'}</div>
+        <div class="carpool-seats">Offering ${seats} seat${seats!==1?'s':''} <span class="seat-pill ${open>0?'seat-open':'seat-full'}">${open} open</span></div></div>
+        ${open>0?`<button onclick="claimRide('${eventId}','${e.id}')" style="padding:6px 11px;background:var(--forest);color:#fff;border:none;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:11px;cursor:pointer">Claim seat</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
 }
 </script>
 </body>

@@ -9,7 +9,7 @@ test.describe('Event Management', () => {
 
   test('events API returns seeded events', async ({ page }) => {
     const errors = captureErrors(page);
-    const token = await page.evaluate(() => sessionStorage.getItem('ff_token'));
+    const token = await page.evaluate(() => localStorage.getItem('ff_token'));
     const resp = await page.request.get('/api/events', {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -24,7 +24,7 @@ test.describe('Event Management', () => {
   });
 
   test('create and delete event via API', async ({ page }) => {
-    const token = await page.evaluate(() => sessionStorage.getItem('ff_token'));
+    const token = await page.evaluate(() => localStorage.getItem('ff_token'));
     const headers = { Authorization: `Bearer ${token}` };
     // Create
     const createResp = await page.request.post('/api/events', {

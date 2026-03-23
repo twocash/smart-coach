@@ -1,7 +1,7 @@
 // Test helpers for authentication flows
 
 /**
- * Login as coach via API and set token in sessionStorage
+ * Login as coach via API and set token in localStorage
  */
 export async function loginAsCoach(page, pin = '1234') {
   const baseURL = page.url().startsWith('http') ? new URL(page.url()).origin : 'http://localhost:3000';
@@ -10,7 +10,7 @@ export async function loginAsCoach(page, pin = '1234') {
   });
   const body = await resp.json();
   if (!body.token) throw new Error(`Coach login failed: ${JSON.stringify(body)}`);
-  await page.evaluate(token => sessionStorage.setItem('ff_token', token), body.token);
+  await page.evaluate(token => localStorage.setItem('ff_token', token), body.token);
   return body;
 }
 

@@ -26,7 +26,7 @@ test.describe('Coach Login Flow', () => {
     // Wait for dashboard to load — coach screen should be visible
     await expect(page.locator('#screen-coach')).toBeVisible({ timeout: 10000 });
     // Verify token was stored
-    const token = await page.evaluate(() => sessionStorage.getItem('ff_token'));
+    const token = await page.evaluate(() => localStorage.getItem('ff_token'));
     expect(token).toBeTruthy();
     expect(errors.filter(e => !e.includes('favicon'))).toHaveLength(0);
   });
@@ -41,7 +41,7 @@ test.describe('Coach Login Flow', () => {
     }
     // Should show error or stay on PIN screen
     await page.waitForTimeout(2000);
-    const token = await page.evaluate(() => sessionStorage.getItem('ff_token'));
+    const token = await page.evaluate(() => localStorage.getItem('ff_token'));
     expect(token).toBeFalsy();
   });
 });

@@ -241,6 +241,29 @@ input:focus,select:focus,textarea:focus{border-color:var(--fern);}
   </div>
 </div>
 
+<!-- ══════ MAGIC LINK SETUP ══════ -->
+<div class="screen" id="screen-setup-join">
+  <div class="center-wrap">
+    <div class="pin-card">
+      <div class="pin-logo">Fairway <span>Forward</span></div>
+      <div class="pin-school">Bishop Chatard · Boys Golf</div>
+      <div class="pin-hed" id="setup-join-hed">Welcome!</div>
+      <div class="pin-sub" id="setup-join-sub">Set your 4-digit PIN to get started</div>
+      <div class="pin-dots">
+        <div class="pin-dot" id="sjd0"></div><div class="pin-dot" id="sjd1"></div>
+        <div class="pin-dot" id="sjd2"></div><div class="pin-dot" id="sjd3"></div>
+      </div>
+      <div class="pin-err" id="setup-join-err"></div>
+      <div class="pin-pad">
+        <button class="pin-key" onclick="sjk('1')">1</button><button class="pin-key" onclick="sjk('2')">2</button><button class="pin-key" onclick="sjk('3')">3</button>
+        <button class="pin-key" onclick="sjk('4')">4</button><button class="pin-key" onclick="sjk('5')">5</button><button class="pin-key" onclick="sjk('6')">6</button>
+        <button class="pin-key" onclick="sjk('7')">7</button><button class="pin-key" onclick="sjk('8')">8</button><button class="pin-key" onclick="sjk('9')">9</button>
+        <button class="pin-key" style="visibility:hidden"></button><button class="pin-key" onclick="sjk('0')">0</button><button class="pin-key del" onclick="sjd()">⌫</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ══════ PLAYER PICKER ══════ -->
 <div class="screen" id="screen-player-picker">
   <div class="center-wrap">
@@ -463,10 +486,10 @@ input:focus,select:focus,textarea:focus{border-color:var(--fern);}
 ════════════════════════════════════════ */
 const API = '/api';
 
-// Session stored in sessionStorage — clears on tab close
-function getToken(){ return sessionStorage.getItem('ff_token'); }
-function setToken(t){ sessionStorage.setItem('ff_token', t); }
-function clearToken(){ sessionStorage.removeItem('ff_token'); }
+// Session stored in localStorage — persists across tab closures
+function getToken(){ return localStorage.getItem('ff_token'); }
+function setToken(t){ localStorage.setItem('ff_token', t); }
+function clearToken(){ localStorage.removeItem('ff_token'); }
 
 function authHeaders(){
   const t = getToken();
@@ -760,6 +783,7 @@ function playerCard(p,i){
         <input type="tel" id="ptel-${p.id}" placeholder="Cell number" onclick="event.stopPropagation()">
       </div>
       <button class="phone-save-btn" onclick="saveParent(${p.id});event.stopPropagation()" style="width:100%;padding:9px;background:var(--forest);color:#fff;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer">Save parent contact</button>
+      <button class="copy-btn" onclick="copyInviteLink(${p.id},'player');event.stopPropagation()" style="width:100%;margin:8px 0 0;text-align:center;display:block">🔗 Copy Player Invite Link</button>
       <div style="margin-top:10px;display:flex;gap:8px">
         <button onclick="setSquad(${p.id},'v');event.stopPropagation()" style="flex:1;padding:7px;border-radius:7px;border:.5px solid ${p.squad==='v'?'var(--fern)':'var(--border)'};background:${p.squad==='v'?'var(--greenb)':'none'};font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;color:${p.squad==='v'?'var(--green)':'var(--muted)'}">Varsity</button>
         <button onclick="setSquad(${p.id},'jv');event.stopPropagation()" style="flex:1;padding:7px;border-radius:7px;border:.5px solid ${p.squad==='jv'?'var(--gold)':'var(--border)'};background:${p.squad==='jv'?'var(--goldl)':'none'};font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;cursor:pointer;color:${p.squad==='jv'?'#7a5c0a':'var(--muted)'}">JV</button>
@@ -921,12 +945,14 @@ function generateTexts(){
     const key=`ptxt_${evId}_${p.id}`;
     const txt=`${p.first}, you're in the lineup for ${evLine}. Reply YES to confirm, or YES + RIDE if you need a carpool seat. Coach has 3 spots available. Go Trojans.`;
     window[key]=txt;
+    const ph=p.parents&&p.parents.length?p.parents[0].phone:'';
+    const smsLink=ph?`<a href="sms:${ph}?body=${encodeURIComponent(txt)}" class="copy-btn" style="text-decoration:none;">💬 Text</a>`:'';
     return `<div class="msg-out">
       <div class="msg-out-hdr player-hdr">
-        <div><div class="msg-out-title">${p.first} ${p.last}</div><div class="msg-out-sub">${p.parents&&p.parents.length?formatPhone(p.parents[0].phone):'No number on file'}</div></div>
+        <div><div class="msg-out-title">${p.first} ${p.last}</div><div class="msg-out-sub">${ph?formatPhone(ph):'No number on file'}</div></div>
       </div>
       <div class="msg-out-body">${txt}</div>
-      <button class="copy-btn" onclick="copyText('${key}',this)">📋 Copy</button>
+      <button class="copy-btn" onclick="copyText('${key}',this)">📋 Copy</button>${smsLink}
     </div>`;}).join('');
 
   // Parent texts
@@ -941,6 +967,7 @@ function generateTexts(){
         </div>
         <div class="msg-out-body">${txt}</div>
         <button class="copy-btn" onclick="copyText('${key}',this)">📋 Copy</button>
+        <a href="sms:${par.phone}?body=${encodeURIComponent(txt)}" class="copy-btn" style="text-decoration:none;">💬 Text</a>
       </div>`;}).join('');}).join('');
 
   // Bench notification
@@ -949,10 +976,12 @@ function generateTexts(){
     const benchTxt=notPlaying.map(p=>{
       const t=`${p.first}, you're not in the lineup for ${evLine} — keep working. Next opportunity is coming. Coach`;
       window[`bench_${evId}_${p.id}`]=t;
+      const ph=(p.parents&&p.parents.length)?p.parents[0].phone:'';
+      const smsLink=ph?`<a href="sms:${ph}?body=${encodeURIComponent(t)}" class="copy-btn" style="text-decoration:none;">💬 Text</a>`:'';
       return `<div class="msg-out" style="opacity:.75">
         <div class="msg-out-hdr" style="background:var(--surf)"><div class="msg-out-title" style="color:var(--muted)">${p.first} ${p.last} — not playing</div></div>
         <div class="msg-out-body">${t}</div>
-        <button class="copy-btn" onclick="copyText('bench_${evId}_${p.id}',this)">📋 Copy</button>
+        <button class="copy-btn" onclick="copyText('bench_${evId}_${p.id}',this)">📋 Copy</button>${smsLink}
       </div>`;}).join('');
     document.getElementById('player-texts').innerHTML+=`<div class="divider">Players not in this lineup</div>${benchTxt}`;
   }
@@ -1122,9 +1151,72 @@ async function renderParentHome(){
 
 
 /* ════════════════════════════════════════
+   MAGIC LINK ONBOARDING
+════════════════════════════════════════ */
+let setupRole='', setupId='', setupToken='', setupPinBuf='', setupMode='enter', setupNewPin='';
+
+function sjk(k){if(setupPinBuf.length>=4)return;setupPinBuf+=k;updateSjDots();if(setupPinBuf.length===4)setTimeout(handleSetupJoin,180);}
+function sjd(){setupPinBuf=setupPinBuf.slice(0,-1);updateSjDots();document.getElementById('setup-join-err').textContent='';}
+function updateSjDots(){for(let i=0;i<4;i++){const d=document.getElementById('sjd'+i);d.classList.toggle('filled',i<setupPinBuf.length);d.classList.remove('error');}}
+
+async function handleSetupJoin(){
+  if(setupMode==='enter'){
+    setupNewPin=setupPinBuf; setupPinBuf=''; updateSjDots();
+    document.getElementById('setup-join-err').textContent='';
+    document.getElementById('setup-join-hed').textContent='Confirm PIN';
+    document.getElementById('setup-join-sub').textContent='Enter the same digits again';
+    setupMode='confirm';
+  } else if(setupMode==='confirm'){
+    if(setupPinBuf!==setupNewPin){
+      for(let i=0;i<4;i++)document.getElementById('sjd'+i).classList.add('error');
+      document.getElementById('setup-join-err').textContent="Didn't match. Try again.";
+      setTimeout(()=>{
+        setupPinBuf=''; updateSjDots(); setupNewPin=''; setupMode='enter';
+        document.getElementById('setup-join-err').textContent='';
+        document.getElementById('setup-join-hed').textContent='Welcome!';
+        document.getElementById('setup-join-sub').textContent='Set your 4-digit PIN to get started';
+      },1000);
+      return;
+    }
+    try{
+      const currentAuth = getToken();
+      setToken(setupToken);
+      await POST('/auth/setup',{role:setupRole, identifier:setupId, pin:setupPinBuf});
+      setToken('');
+      const loginR = await POST('/auth',{role:setupRole, identifier:setupId, pin:setupPinBuf});
+      setToken(loginR.token);
+      window.location.hash = '';
+      window.location.reload();
+    }catch(e){
+      document.getElementById('setup-join-err').textContent=e.message;
+      setTimeout(()=>{setupPinBuf='';updateSjDots();},900);
+    }
+  }
+}
+
+function copyInviteLink(id, role) {
+  const token = getToken();
+  const url = `${window.location.origin}/#setup?role=${role}&id=${id}&t=${token}`;
+  navigator.clipboard.writeText(url).then(() => alert('Invite link copied! Text this to them.'));
+}
+
+/* ════════════════════════════════════════
    INIT
 ════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', async ()=>{
+  // Check for #setup hash (magic link onboarding)
+  const hash = window.location.hash;
+  if (hash.startsWith('#setup')) {
+    const params = new URLSearchParams(hash.substring(hash.indexOf('?') + 1));
+    setupRole = params.get('role');
+    setupId = params.get('id');
+    setupToken = params.get('t');
+    if (setupRole && setupId && setupToken) {
+      showScreen('screen-setup-join');
+      return;
+    }
+  }
+
   // Set today's date on event form
   const today=new Date().toISOString().split('T')[0];
   const dateEl=document.getElementById('ev-date');

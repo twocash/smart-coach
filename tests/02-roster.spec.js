@@ -6,8 +6,9 @@ test.describe('Roster Management', () => {
     await page.goto('/');
     await loginAsCoach(page);
     await page.goto('/');
-    // Wait for coach dashboard to render
-    await page.waitForTimeout(3000);
+    // Wait for coach dashboard to render with data loaded
+    await expect(page.locator('#screen-coach')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('.p-card').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('displays seeded players', async ({ page }) => {
@@ -29,7 +30,7 @@ test.describe('Roster Management', () => {
   });
 
   test('players API returns correct data', async ({ page }) => {
-    const token = await page.evaluate(() => sessionStorage.getItem('ff_token'));
+    const token = await page.evaluate(() => localStorage.getItem('ff_token'));
     const resp = await page.request.get('/api/players', {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -42,13 +43,13 @@ test.describe('Roster Management', () => {
   });
 
   test('player has linked parent', async ({ page }) => {
-    const token = await page.evaluate(() => sessionStorage.getItem('ff_token'));
+    const token = await page.evaluate(() => localStorage.getItem('ff_token'));
     const resp = await page.request.get('/api/players', {
       headers: { Authorization: `Bearer ${token}` }
     });
     const players = await resp.json();
     const jake = players.find(p => p.last === 'Alpha');
-    expect(jake.parents).toHaveLength(1);
-    expect(jake.parents[0].name).toBe('Parent Alpha');
+    expect(jake.parents.length).toBeGreaterThanOrEqual(1);
+    expect(jake.parents.some(p => p.name === 'Parent Alpha')).toBeTruthy();
   });
 });

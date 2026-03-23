@@ -1,57 +1,67 @@
 # ROADMAP — Fairway Forward
 ## Initiative: Platform Launch + Season Operations
-## Updated: 2026-03-22
+## Updated: 2026-03-23
 
 ---
 
 ## Sprint Map
 
-### Sprint 1 — Season 4 Static Deploy (TODAY)
+### Sprint 1 — Season 4 Static Deploy
 **Sprint:** `ff-season4-deploy-v1`
-**Status:** 🟡 In Progress — Ready for Epic 1
-**Est. time:** ~2 hours
-**Goal:** `fairway_forward_season-4.html` live at a Vercel URL. David on his phone, in the coach dashboard, today.
-**Scope:** GitHub repo, Vercel static deploy, GitHub Desktop handoff, David's CI/CD workflow.
-**Backend:** NONE NEEDED — app is self-contained (localStorage + direct Anthropic API calls).
+**Status:** ✅ Complete
+**Goal:** HTML live at a Vercel URL.
 
 ---
 
 ### Sprint 2 — Backend Wiring
-**Sprint:** `ff-backend-v1` (planned)
-**Status:** ⏸️ Not Started
-**Goal:** Replace localStorage with Supabase. Replace client PIN with Twilio SMS. Proxy Anthropic API through Vercel (key secured server-side).
-**Scope:**
-- Supabase project + schema deploy (`fairway_forward_schema.sql` is ready)
-- PIN auth system (Twilio SMS, 6-digit, bcryptjs)
-- `lib/` layer: `supabase.js`, `auth.js`, `scope.js`, `twilio.js`
-- All API routes from `ff-production-launch-v1` SPRINTS.md
-- `ff-api.js` added to frontend (token header helper)
-- Full QA from build brief checklist
-**Dependencies:** Sprint 1 complete. Twilio credentials confirmed.
+**Sprint:** `ff-backend-v1`
+**Status:** ✅ Complete (2026-03-23)
+**Goal:** Replace localStorage with Supabase. API routes. PIN auth. Vercel deploy.
+**What shipped:**
+- Supabase schema (9 tables) deployed
+- All API routes wired: auth, players, events, lineups, RSVPs, signups, carpool, swing notes
+- Sub-path routing fixed (split handlers for vercel dev compatibility)
+- Frontend JS syntax bugs fixed (unescaped apostrophe, malformed select query)
+- Carpool seat counting bug fixed
+- Season config extracted from hardcoded values
+- `.gitignore`, seed script, Playwright E2E suite (18 tests passing)
+- Production deployed to https://smart-coach-wheat.vercel.app
 
 ---
 
 ### Sprint 3 — AI Swing Note Wiring
-**Sprint:** `ff-ai-notes-v1` (planned)
-**Status:** ⏸️ Not Started
-**Goal:** Wire swing note generation through Vercel API proxy. Coach reviews, edits, approves, sends. Notes saved to Supabase.
-**Dependencies:** Sprint 2 complete. Anthropic API key in Vercel env vars.
+**Sprint:** `ff-ai-notes-v1`
+**Status:** 🟡 Partially Complete
+**What exists:** `api/swing-note.js` calls Anthropic Claude API with coach-only auth guard. Endpoint works.
+**Remaining:** Frontend UI to trigger swing notes, review/edit/approve flow, save notes to Supabase.
+**Dependencies:** `ANTHROPIC_API_KEY` env var set in Vercel.
 
 ---
 
-### Sprint 4 — Player + Parent Onboarding
-**Sprint:** `ff-onboarding-v1` (planned)
-**Status:** ⏸️ Not Started
-**Goal:** Streamline getting all players and parents into the system. Player view. Parent view.
-**Dependencies:** Sprint 2 complete.
+### Sprint 4 — Zero-Friction Onboarding & Auth Hardening
+**Sprint:** `ff-onboarding-v1`
+**Status:** ⏸️ Not Started — **NEXT UP**
+**Goal:** Eliminate manual PIN distribution. Self-serve SMS invite flow, persistent sessions, automated account recovery.
+**Full spec:** `docs/sprints/ff-onboarding-v1/SPEC.md`
+**Dependencies:** Sprint 2 complete ✅, Twilio credentials needed.
 
 ---
 
 ### Sprint 5 — Public Feed + Blog
-**Sprint:** `ff-public-feed-v1` (planned)
+**Sprint:** `ff-public-feed-v1`
 **Status:** ⏸️ Not Started
 **Goal:** Fan-facing public page. AI post-match recaps. Public standings.
 **Dependencies:** Sprints 2 + 3 complete.
+
+---
+
+## Current UX Gaps (from Sprint 2 audit)
+
+1. **Onboarding is manual** — Coach must know legacy IDs, manually set PINs, verbally communicate them. No self-service. → Addressed by Sprint 4.
+2. **No notifications** — No SMS, email, or push. Lineup texts are copy-paste only. → Sprint 4 introduces Twilio SMS.
+3. **Session doesn't persist** — `sessionStorage` clears on tab close. → Sprint 4 migrates to `localStorage`.
+4. **No forgot PIN flow** — Coach is IT support for every lost PIN. → Sprint 4 adds OTP-based recovery.
+5. **Parent linking is one-way** — Parents can't self-link to their kid. → Sprint 4 invite flow handles this.
 
 ---
 
@@ -65,4 +75,4 @@ See `docs/pm-workflow/PM_WORKFLOW.md` for the full session protocol.
 
 ---
 
-*Initiative: Fairway Forward | PM: Claude Desktop | Date: 2026-03-22*
+*Initiative: Fairway Forward | PM: Claude Desktop | Date: 2026-03-23*

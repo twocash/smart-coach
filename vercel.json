@@ -4,13 +4,13 @@
     { "src": "api/**/*.js", "use": "@vercel/node" },
     { "src": "public/**", "use": "@vercel/static" }
   ],
-  "rewrites": [
-    { "source": "/api/auth/setup", "destination": "/api/auth/setup.js" },
-    { "source": "/api/auth/me", "destination": "/api/auth/me.js" },
-    { "source": "/api/players/parents", "destination": "/api/players/parents.js" },
-    { "source": "/api/carpool/offer", "destination": "/api/carpool/offer.js" },
-    { "source": "/api/carpool/claim", "destination": "/api/carpool/claim.js" },
-    { "source": "/api/:path*", "destination": "/api/:path*.js" },
-    { "source": "/:path*", "destination": "/public/:path*" }
+  "routes": [
+    { "src": "/api/auth/setup", "dest": "/api/auth/setup.js" },
+    { "src": "/api/auth/me", "dest": "/api/auth/me.js" },
+    { "src": "/api/players/parents", "dest": "/api/players/parents.js" },
+    { "src": "/api/carpool/offer", "dest": "/api/carpool/offer.js" },
+    { "src": "/api/carpool/claim", "dest": "/api/carpool/claim.js" },
+    { "src": "/api/([^/]+)$", "dest": "/api/$1.js" },
+    { "src": "/(.*)", "dest": "/public/$1" }
   ]
 }

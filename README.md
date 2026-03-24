@@ -1,6 +1,6 @@
 # Fairway Forward — Smart Coach
 **High School Boys Golf · Coaching Platform**
-*Designed by David Boncosky · Built by Jim Cashman*
+*Designed by David Boncosky · Built by Jim Calhoun*
 
 ---
 
